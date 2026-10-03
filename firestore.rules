@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Every user's financial data lives under users/{uid}/... . The only rule
+// that matters here: a request can read or write a given uid's data only
+// when it's authenticated AS that uid. This is enforced two levels deep
+// (users/{uid}/{collection}/{docId} and one level of nested subcollection,
+// e.g. aiConversations/{id}/messages/{id}) so every current and future
+// subcollection under a user is covered without having to list each one by
+// name — see docs/FIREBASE.md "Security rules".
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(uid);
+
+        match /{nestedCollection}/{nestedDocId} {
+          allow read, write: if isOwner(uid);
+        }
+      }
+    }
+
+    // Explicit default-deny for anything not matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

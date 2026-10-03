@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme tokens as CSS variables, consumed by tailwind.config.js via
+ * rgb(var(--color-x) / <alpha-value>) so every className (bg-background,
+ * text-text-primary, ...) is theme-aware with zero changes to any component.
+ * `.dark` is toggled app-wide by nativewind's colorScheme.set() — see
+ * src/features/theme/theme.store.ts. Values here must stay in sync with the hex
+ * source of truth in src/constants/colors.js (see that file's comment).
+ *
+ * This is the SOURCE OF TRUTH for the visual design system — see ui.md
+ * §3 (Color tokens) for what each role means and §35 for how to add one.
+ * Any new --color-* here needs a matching entry in colors.js if a native prop
+ * (Ionicons color, shadowColor, tabBarStyle) ever needs the literal value.
+ */
+:root {
+  --color-background: 242 241 238;
+  --color-background-raised: 251 250 248;
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 237 235 230;
+  --color-surface-sunken: 231 229 223;
+  --color-surface-glass: rgba(255, 255, 255, 0.78);
+  --color-border: 222 219 211;
+  --color-border-strong: 185 181 170;
+  /* The neo-brutalist ink. True near-black in light mode — see ui.md §6. */
+  --color-border-heavy: 20 20 26;
+  --color-text-primary: 20 20 26;
+  --color-text-secondary: 78 78 88;
+  --color-text-muted: 130 130 140;
+  --color-accent: 91 63 214;
+  --color-accent-secondary: 14 124 147;
+  --color-accent-muted: 234 228 255;
+  --color-success: 18 133 90;
+  --color-success-muted: 226 245 236;
+  --color-warning: 154 98 6;
+  --color-warning-muted: 251 240 218;
+  --color-danger: 196 44 54;
+  --color-danger-muted: 251 227 228;
+  --color-info: 75 69 196;
+  --color-info-muted: 231 230 251;
+  /* Hard neo-brutalist shadow color. Ink in light mode, accent in dark —
+     a black hard shadow on a near-black card is invisible (ui.md §12). */
+  --color-shadow-hard: 20 20 26;
+  --color-shadow-hard-soft: 20 20 26;
+}
+
+.dark {
+  --color-background: 10 10 15;
+  --color-background-raised: 16 16 23;
+  --color-surface: 22 22 30;
+  --color-surface-elevated: 31 31 42;
+  /* Recessed wells are DARKER than the page so they read as carved, not raised. */
+  --color-surface-sunken: 12 12 18;
+  --color-surface-glass: rgba(30, 30, 44, 0.72);
+  --color-border: 44 44 58;
+  --color-border-strong: 67 67 90;
+  /* Light ink in dark mode: a black 2px border on a near-black card is worse
+     than no border, because the layout implies one exists (ui.md §12). */
+  --color-border-heavy: 90 90 120;
+  --color-text-primary: 245 245 247;
+  --color-text-secondary: 160 160 178;
+  --color-text-muted: 113 113 138;
+  --color-accent: 124 92 252;
+  --color-accent-secondary: 61 220 255;
+  --color-accent-muted: 36 28 74;
+  --color-success: 63 201 139;
+  --color-success-muted: 18 44 36;
+  --color-warning: 245 165 36;
+  --color-warning-muted: 51 38 15;
+  --color-danger: 242 84 91;
+  --color-danger-muted: 51 26 29;
+  --color-info: 138 138 240;
+  --color-info-muted: 30 29 61;
+  /* The dark-mode signature: a violet extrusion instead of an invisible
+     black shadow (ui.md §12). */
+  --color-shadow-hard: 124 92 252;
+  --color-shadow-hard-soft: 91 65 214;
+}
