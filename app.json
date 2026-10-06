@@ -31,6 +31,12 @@
           "faceIDPermission": "Allow F-AI to use Face ID to secure your financial data."
         }
       ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow F-AI to use Face ID to unlock your financial data."
+        }
+      ],
       "expo-font",
       "expo-splash-screen",
       [

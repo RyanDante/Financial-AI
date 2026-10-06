@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +10,7 @@ import { parseMoneyInput } from '@/utils/currency';
 import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusBadge } from '@/components/ui';
 import { useFinanceStore } from '@/store/financeStore';
 import { aiStatus } from '@/ai';
+import { useAppLockStore } from '@/features/security/appLock.store';
 import { calculateBalance } from '@/finance/calculations';
 import { getAccountTypeMeta } from '@/features/accounts/accountTypes';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -26,6 +27,41 @@ const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: keyof typeof Ionico
   { mode: 'dark', label: 'Dark', icon: 'moon-outline' },
   { mode: 'system', label: 'Match device', icon: 'phone-portrait-outline' },
 ];
+
+/** App lock: fingerprint, face or passcode on open and after a minute away. */
+function SecuritySection() {
+  const colors = useThemeColors();
+  const { enabled, setEnabled } = useAppLockStore();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+
+  const toggle = async (next: boolean) => {
+    setIsBusy(true);
+    setMessage(await setEnabled(next));
+    setIsBusy(false);
+  };
+
+  return (
+    <Card className="gap-sm">
+      <Label>Security</Label>
+      <View className="flex-row items-center justify-between gap-md">
+        <View className="flex-1">
+          <Body>App lock</Body>
+          <Caption>Ask for your fingerprint, face or phone passcode when F-AI opens, and after a minute away.</Caption>
+        </View>
+        <Switch
+          value={enabled}
+          onValueChange={toggle}
+          disabled={isBusy}
+          accessibilityLabel="App lock"
+          trackColor={{ false: colors['surface-elevated'], true: colors.accent }}
+          thumbColor={colors.surface}
+        />
+      </View>
+      {message ? <Caption className="text-warning">{message}</Caption> : null}
+    </Card>
+  );
+}
 
 function AppearanceSection() {
   const { mode, setMode } = useThemeStore();
@@ -251,6 +287,8 @@ export default function SettingsScreen() {
         </Card>
       </Pressable>
 
+      <SecuritySection />
+
       <AppearanceSection />
 
       <Card className="gap-md">
@@ -280,7 +318,6 @@ export default function SettingsScreen() {
         <Caption>
           F-AI keeps your financial data on this device first. Cloud backup, when you sign in, stores it under your
           account in Firebase, scoped so only you can read or write it — see docs/FIREBASE.md for the full picture.
-          Security (app lock, biometrics) is planned for a future update.
         </Caption>
         <Caption>
           AI copilot: {aiStatus.provider === 'mock' ? 'offline (built-in rules)' : `${aiStatus.provider} · ${aiStatus.model}`}

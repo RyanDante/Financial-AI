@@ -1,6 +1,6 @@
 import '../styles/global.css';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -16,6 +16,8 @@ import { useAuthStore } from '@/features/auth/auth.store';
 import { useSyncStore } from '@/store/syncStore';
 import { useThemeStore } from '@/features/theme/theme.store';
 import { modalOptions, usePageHeaderOptions } from '@/components/navigation/pageHeader';
+import { useAppLockStore } from '@/features/security/appLock.store';
+import { LockScreen } from '@/components/ui/LockScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -28,13 +30,15 @@ export default function RootLayout() {
   const initializeAuth = useAuthStore((s) => s.initialize);
   const initializeSync = useSyncStore((s) => s.initialize);
   const loadTheme = useThemeStore((s) => s.loadTheme);
+  const loadLock = useAppLockStore((s) => s.loadLock);
+  const isLocked = useAppLockStore((s) => s.locked);
   const { colorScheme } = useColorScheme();
   const pageHeaderOptions = usePageHeaderOptions();
 
   useEffect(() => {
     (async () => {
       await getDatabase();
-      await Promise.all([loadAll(), loadSettings(), loadTheme()]);
+      await Promise.all([loadAll(), loadSettings(), loadTheme(), loadLock()]);
       setIsDbReady(true);
     })();
     // Firebase Auth/Firestore calls here are independent of local readiness —
@@ -42,7 +46,17 @@ export default function RootLayout() {
     // both already fail gracefully offline (see auth.store.ts / sync.service.ts).
     initializeAuth();
     initializeSync();
-  }, [loadAll, loadSettings, loadTheme, initializeAuth, initializeSync]);
+  }, [loadAll, loadSettings, loadTheme, loadLock, initializeAuth, initializeSync]);
+
+  // Re-lock after a minute in the background (app lock, Settings › Security).
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      const lock = useAppLockStore.getState();
+      if (state === 'background') lock.onBackground();
+      else if (state === 'active') lock.onForeground();
+    });
+    return () => subscription.remove();
+  }, []);
 
   const isReady = fontsLoaded && displayFontsLoaded && isDbReady;
 
@@ -81,6 +95,7 @@ export default function RootLayout() {
             <Stack.Screen name="debts/pay" options={modalOptions('Record a payment')} />
             <Stack.Screen name="income/new" options={modalOptions('Add income')} />
           </Stack>
+          {isLocked ? <LockScreen /> : null}
         </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>
