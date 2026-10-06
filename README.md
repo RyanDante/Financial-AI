@@ -79,11 +79,19 @@ backed by CSS-variable theming so existing classNames didn't need to change.
 **Data management:** transactions can be edited and deleted (soft delete, synced as a
 delete), goals take contributions from a goal detail screen, budget category limits are
 editable, and Settings manages money accounts (cash, mobile money, bank) with starting
-balances. The tab screens share a fixed app bar with an Alerts screen.
+balances. The tab screens share a fixed app bar with an Alerts screen; every other page uses
+one shared native header (`src/components/navigation/pageHeader.tsx`).
 
-Known gaps to pick up next: no screens yet for subscriptions, recurring bills, debts or
-income sources (so upcoming obligations stay at 0), goals can't be renamed or deleted, no app
-lock/biometrics, no OCR/receipt-data-extraction (the attachment pipeline is OCR-ready — see
+**Planning & insights:** bills and subscriptions (with due-soon alerts, feeding upcoming
+obligations and safe-to-spend), transfers between accounts, transaction dates, a settable
+savings reserve, search and month stepping on Transactions and Budgets, a swipeable
+suggestions carousel on Home (purchases you repeat that look due, bills coming up, everyday
+essentials with your remaining budget; no invented prices), and a category breakdown plus
+6-month spending trend on Overview.
+
+Known gaps to pick up next: no screens for debts or income sources, goals can't be renamed or
+deleted, bills can't be edited (only stopped), the Overview total counts only the default
+currency's accounts, no app lock/biometrics, no OCR/receipt-data-extraction (the attachment pipeline is OCR-ready — see
 `docs/FIREBASE.md` "Offline file handling"), AI conversation sync isn't wired up (paths are
 reserved — see `docs/FIREBASE.md`), sync/upload retries happen by re-running sync rather than a
 scheduled background job (see `docs/FIREBASE.md` "Background sync"), and the Document/Financial

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AmountText, Badge, Body, Card, Caption, EmptyState, Label, ProgressBar, ScreenHeader } from '@/components/ui';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 import { RecommendationCarousel } from '@/components/finance/RecommendationCarousel';
+import { SpendingInsights } from '@/components/finance/SpendingInsights';
 import { useRecommendations } from '@/features/recommendations/useRecommendations';
 import { useBills } from '@/features/bills/useBills';
 import { formatDue, toBillItems } from '@/features/bills/bills';
@@ -122,6 +123,10 @@ export default function HomeScreen() {
           </View>
           <ProgressBar percent={Math.max(0, savingsRate)} tone={savingsRate >= 20 ? 'success' : 'warning'} />
         </Card>
+      </View>
+
+      <View className="px-lg pt-lg">
+        <SpendingInsights currency={currency} />
       </View>
 
       {activeGoals.length > 0 ? (
