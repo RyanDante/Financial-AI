@@ -37,6 +37,12 @@
           "faceIDPermission": "Allow F-AI to use Face ID to unlock your financial data."
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7C5CFC"
+        }
+      ],
       "expo-font",
       [
         "expo-splash-screen",

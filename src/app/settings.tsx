@@ -11,6 +11,7 @@ import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusB
 import { useFinanceStore } from '@/store/financeStore';
 import { aiStatus } from '@/ai';
 import { useAppLockStore } from '@/features/security/appLock.store';
+import { disableReminders, enableReminders, remindersEnabled } from '@/features/reminders/reminders.service';
 import { calculateBalance } from '@/finance/calculations';
 import { getAccountTypeMeta } from '@/features/accounts/accountTypes';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -27,6 +28,58 @@ const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: keyof typeof Ionico
   { mode: 'dark', label: 'Dark', icon: 'moon-outline' },
   { mode: 'system', label: 'Match device', icon: 'phone-portrait-outline' },
 ];
+
+/** Phone reminders: the morning before bills and debt payments, and when a budget reaches 85%. */
+function RemindersSection() {
+  const colors = useThemeColors();
+  const [enabled, setEnabled] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    let isCurrent = true;
+    remindersEnabled().then((value) => {
+      if (isCurrent) setEnabled(value);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const toggle = async (next: boolean) => {
+    setIsBusy(true);
+    if (next) {
+      const problem = await enableReminders();
+      setMessage(problem);
+      setEnabled(problem === null);
+    } else {
+      await disableReminders();
+      setMessage(null);
+      setEnabled(false);
+    }
+    setIsBusy(false);
+  };
+
+  return (
+    <Card className="gap-sm">
+      <View className="flex-row items-center justify-between gap-md">
+        <View className="flex-1">
+          <Body>Reminders</Body>
+          <Caption>A notification the morning before a bill or debt payment is due, and when a budget category reaches 85%.</Caption>
+        </View>
+        <Switch
+          value={enabled}
+          onValueChange={toggle}
+          disabled={isBusy}
+          accessibilityLabel="Reminders"
+          trackColor={{ false: colors['surface-elevated'], true: colors.accent }}
+          thumbColor={colors.surface}
+        />
+      </View>
+      {message ? <Caption className="text-warning">{message}</Caption> : null}
+    </Card>
+  );
+}
 
 /** App lock: fingerprint, face or passcode on open and after a minute away. */
 function SecuritySection() {
@@ -288,6 +341,8 @@ export default function SettingsScreen() {
       </Pressable>
 
       <SecuritySection />
+
+      <RemindersSection />
 
       <AppearanceSection />
 

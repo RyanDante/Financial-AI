@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
@@ -19,8 +20,10 @@ import { modalOptions, usePageHeaderOptions } from '@/components/navigation/page
 import { useAppLockStore } from '@/features/security/appLock.store';
 import { LockScreen } from '@/components/ui/LockScreen';
 import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
+import { configureNotifications, syncReminders } from '@/features/reminders/reminders.service';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+configureNotifications();
 
 export default function RootLayout() {
   const [fontsLoaded] = useInterFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
@@ -49,6 +52,21 @@ export default function RootLayout() {
     initializeAuth();
     initializeSync();
   }, [loadAll, loadSettings, loadTheme, loadLock, loadOnboarding, initializeAuth, initializeSync]);
+
+  // Rebuild reminders whenever data changes (every write path reloads the finance store).
+  const transactions = useFinanceStore((s) => s.transactions);
+  useEffect(() => {
+    if (isDbReady) syncReminders();
+  }, [isDbReady, transactions]);
+
+  // Tapping a reminder opens the page it's about.
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (url === '/bills' || url === '/debts' || url === '/budgets') router.push(url);
+    });
+    return () => subscription.remove();
+  }, []);
 
   // Re-lock after a minute in the background (app lock, Settings › Security).
   useEffect(() => {
