@@ -1,7 +1,12 @@
-import { Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useColorScheme } from 'nativewind';
+import { settingsRepository } from '@/database/repositories';
+import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import { parseMoneyInput } from '@/utils/currency';
 import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusBadge } from '@/components/ui';
 import { useFinanceStore } from '@/store/financeStore';
 import { calculateBalance } from '@/finance/calculations';
@@ -99,6 +104,79 @@ function AccountSection() {
   );
 }
 
+const RESERVE_KEY = `reserve_target_minor_${DEFAULT_CURRENCY}`;
+
+/**
+ * The emergency reserve kept out of "Available to spend safely". Without a
+ * value set here, F-AI suggests 3 months of last month's spending
+ * (getReserveTargetMinor in src/finance/aggregates.ts).
+ */
+function ReserveSection() {
+  const colors = useThemeColors();
+  const { reserveTargetMinor, loadAll } = useFinanceStore();
+  const [isCustom, setIsCustom] = useState(false);
+  const [input, setInput] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    settingsRepository.getSetting(RESERVE_KEY).then((value) => {
+      if (isCurrent) setIsCustom(value !== null);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [reserveTargetMinor]);
+
+  const save = async () => {
+    const minor = parseMoneyInput(input, DEFAULT_CURRENCY);
+    if (minor === null || minor < 0) {
+      setError('Enter 0 or more.');
+      return;
+    }
+    setError(null);
+    await settingsRepository.setSetting(RESERVE_KEY, String(minor));
+    setInput('');
+    await loadAll();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const useSuggested = async () => {
+    await settingsRepository.deleteSetting(RESERVE_KEY);
+    await loadAll();
+    Haptics.selectionAsync();
+  };
+
+  return (
+    <Card className="gap-sm">
+      <Label>Savings reserve</Label>
+      <View className="flex-row items-baseline justify-between">
+        <AmountText valueMinor={reserveTargetMinor} currency={DEFAULT_CURRENCY} size="md" />
+        <Caption>{isCustom ? 'Set by you' : 'Suggested: 3 months of spending'}</Caption>
+      </View>
+      <Caption>Kept aside from &ldquo;Available to spend safely&rdquo; for emergencies.</Caption>
+      <View className="flex-row items-center gap-sm">
+        <TextInput
+          value={input}
+          onChangeText={setInput}
+          keyboardType="decimal-pad"
+          placeholder={`New amount (${DEFAULT_CURRENCY})`}
+          placeholderTextColor={colors['text-muted']}
+          accessibilityLabel={`New reserve amount in ${DEFAULT_CURRENCY}`}
+          className="flex-1 rounded-md border border-border-strong bg-surface px-md py-sm text-text-primary"
+        />
+        <Button label="Set" variant="secondary" onPress={save} disabled={!input.trim()} />
+      </View>
+      {error ? <Caption className="text-danger">{error}</Caption> : null}
+      {isCustom ? (
+        <Pressable onPress={useSuggested} accessibilityRole="button" className="min-h-[44px] justify-center">
+          <Caption className="font-sans-semibold text-accent-secondary">Use the suggested amount instead</Caption>
+        </Pressable>
+      ) : null}
+    </Card>
+  );
+}
+
 /** The money accounts (cash, mobile money, bank) that balances are computed from. */
 function MoneyAccountsSection() {
   const { accounts, transactions } = useFinanceStore();
@@ -139,6 +217,8 @@ export default function SettingsScreen() {
       <AccountSection />
 
       <MoneyAccountsSection />
+
+      <ReserveSection />
 
       <Pressable onPress={() => router.push('/bills')} accessibilityRole="button">
         <Card className="flex-row items-center justify-between">

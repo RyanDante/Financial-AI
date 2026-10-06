@@ -18,6 +18,12 @@ export async function setSetting(key: string, value: string): Promise<void> {
   );
 }
 
+/** Removes a setting so readers fall back to their computed default. Settings are local-only (not synced). */
+export async function deleteSetting(key: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM settings WHERE key = ?', key);
+}
+
 export async function getAllSettings(): Promise<Record<string, string>> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<{ key: string; value: string | null }>('SELECT key, value FROM settings');

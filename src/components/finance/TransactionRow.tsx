@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { AmountText, Body, Caption, IconCircle } from '@/components/ui';
+import { useThemeColors } from '@/constants/theme';
 import type { Category, Transaction } from '@/types/finance';
 
 interface TransactionRowProps {
@@ -12,13 +13,28 @@ function formatDate(iso: string): string {
 }
 
 export function TransactionRow({ transaction, category }: TransactionRowProps) {
+  const colors = useThemeColors();
   const isIncome = transaction.type === 'income';
-  const tone = isIncome ? 'success' : transaction.type === 'transfer' ? 'primary' : 'primary';
+  const isTransfer = transaction.type === 'transfer';
+
+  if (isTransfer) {
+    // Moves money between your own accounts: neither spending nor income, so no sign and no category.
+    return (
+      <View className="flex-row items-center gap-md py-sm">
+        <IconCircle name="swap-horizontal" color={colors['accent-secondary']} backgroundColor={`${colors['accent-secondary']}26`} />
+        <View className="flex-1">
+          <Body numberOfLines={1}>{transaction.description || 'Transfer'}</Body>
+          <Caption>Transfer · {formatDate(transaction.occurredAt)}</Caption>
+        </View>
+        <AmountText valueMinor={transaction.amountMinor} currency={transaction.currency} size="sm" tone="accentSecondary" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-row items-center gap-md py-sm">
       <IconCircle
-        name={(category?.icon as any) ?? 'ellipsis-horizontal'}
+        name={(category?.icon ?? 'ellipsis-horizontal') as never}
         color={category?.color ?? undefined}
         backgroundColor={category?.color ? `${category.color}26` : undefined}
       />
@@ -32,7 +48,7 @@ export function TransactionRow({ transaction, category }: TransactionRowProps) {
         valueMinor={isIncome ? transaction.amountMinor : -transaction.amountMinor}
         currency={transaction.currency}
         size="sm"
-        tone={tone}
+        tone={isIncome ? 'success' : 'primary'}
         forceSign={isIncome}
       />
     </View>

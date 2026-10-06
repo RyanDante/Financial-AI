@@ -33,7 +33,8 @@ interface AmountTextProps extends TextProps {
   currency: CurrencyCode;
   size?: AmountSize;
   /** Semantic state from the token set — never an arbitrary color (ui.md §30). */
-  tone?: 'primary' | 'success' | 'warning' | 'danger' | 'accent' | 'muted';
+  /** `accentSecondary` is for transfers between your own accounts (ui.md §21). */
+  tone?: 'primary' | 'success' | 'warning' | 'danger' | 'accent' | 'accentSecondary' | 'muted';
   /** Shows a "+" in front of positive amounts, next to an unsigned expense. */
   forceSign?: boolean;
   /**
@@ -51,6 +52,7 @@ const TONE_CLASSES: Record<NonNullable<AmountTextProps['tone']>, string> = {
   warning: 'text-warning',
   danger: 'text-danger',
   accent: 'text-accent',
+  accentSecondary: 'text-accent-secondary',
   muted: 'text-text-muted',
 };
 

@@ -94,18 +94,36 @@ export default function TransactionDetailScreen() {
   const category = categories.find((c) => c.id === transaction.categoryId);
   const account = accounts.find((a) => a.id === transaction.accountId);
   const isIncome = transaction.type === 'income';
+  const isTransfer = transaction.type === 'transfer';
+  const toAccount = accounts.find((a) => a.id === transaction.transferAccountId);
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <View className="items-center gap-xs py-md">
-        <AmountText valueMinor={isIncome ? transaction.amountMinor : -transaction.amountMinor} currency={transaction.currency} size="lg" tone={isIncome ? 'success' : 'primary'} forceSign={isIncome} />
-        <Heading>{transaction.merchant || transaction.description || category?.name || 'Transaction'}</Heading>
+        <AmountText
+          valueMinor={isIncome || isTransfer ? transaction.amountMinor : -transaction.amountMinor}
+          currency={transaction.currency}
+          size="lg"
+          tone={isIncome ? 'success' : isTransfer ? 'accentSecondary' : 'primary'}
+          forceSign={isIncome}
+        />
+        <Heading>{isTransfer ? `${account?.name ?? 'Account'} → ${toAccount?.name ?? 'Account'}` : transaction.merchant || transaction.description || category?.name || 'Transaction'}</Heading>
       </View>
 
       <Card className="gap-sm">
-        <DetailRow label="Category" value={category?.name ?? 'Uncategorized'} />
-        <DetailRow label="Account" value={account?.name ?? 'Unknown'} />
-        <DetailRow label="Date" value={new Date(transaction.occurredAt).toLocaleString()} />
+        {isTransfer ? (
+          <>
+            <DetailRow label="Type" value="Transfer" />
+            <DetailRow label="From" value={account?.name ?? 'Unknown'} />
+            <DetailRow label="To" value={toAccount?.name ?? 'Unknown'} />
+          </>
+        ) : (
+          <>
+            <DetailRow label="Category" value={category?.name ?? 'Uncategorized'} />
+            <DetailRow label="Account" value={account?.name ?? 'Unknown'} />
+          </>
+        )}
+        <DetailRow label="Date" value={new Date(transaction.occurredAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })} />
         {transaction.notes ? <DetailRow label="Notes" value={transaction.notes} /> : null}
       </Card>
 
