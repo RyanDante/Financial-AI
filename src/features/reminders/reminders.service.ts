@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { getNotifications, remindersUnsupportedHere } from './notificationsModule';
 import { budgetsRepository, categoriesRepository, debtsRepository, recurringExpensesRepository, settingsRepository, subscriptionsRepository, transactionsRepository } from '@/database/repositories';
 import { calculateMonthlySpending } from '@/finance/calculations';
 import { toBillItems } from '@/features/bills/bills';
@@ -12,6 +12,8 @@ const CHANNEL_ID = 'reminders';
 
 /** Show reminders as banners even while F-AI is open. Call once at startup. */
 export function configureNotifications(): void {
+  const Notifications = getNotifications();
+  if (!Notifications) return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
   });
@@ -20,12 +22,31 @@ export function configureNotifications(): void {
   }
 }
 
+export { remindersUnsupportedHere };
+
+/** Opens the page a tapped reminder is about. Returns an unsubscribe function. */
+export function onReminderTapped(open: (url: '/bills' | '/debts' | '/budgets') => void): () => void {
+  const Notifications = getNotifications();
+  if (!Notifications) return () => {};
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    const url = response.notification.request.content.data?.url;
+    if (url === '/bills' || url === '/debts' || url === '/budgets') open(url);
+  });
+  return () => subscription.remove();
+}
+
 export async function remindersEnabled(): Promise<boolean> {
   return (await settingsRepository.getSetting(REMINDERS_KEY)) === 'true';
 }
 
 /** Asks for notification permission and turns reminders on. Returns a message when it can't. */
 export async function enableReminders(): Promise<string | null> {
+  const Notifications = getNotifications();
+  if (!Notifications) {
+    return remindersUnsupportedHere
+      ? "Reminders don't work in Expo Go on Android. They work in a development build of F-AI."
+      : "Reminders aren't available on this device.";
+  }
   const current = await Notifications.getPermissionsAsync();
   const granted = current.granted || (await Notifications.requestPermissionsAsync()).granted;
   if (!granted) return 'Notifications are off for F-AI. Allow them in your phone settings to get reminders.';
@@ -36,7 +57,7 @@ export async function enableReminders(): Promise<string | null> {
 
 export async function disableReminders(): Promise<void> {
   await settingsRepository.setSetting(REMINDERS_KEY, 'false');
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  await getNotifications()?.cancelAllScheduledNotificationsAsync();
 }
 
 let syncing: Promise<void> | null = null;
@@ -54,6 +75,8 @@ export function syncReminders(): Promise<void> {
 }
 
 async function runSync(): Promise<void> {
+  const Notifications = getNotifications();
+  if (!Notifications) return;
   try {
     if (!(await remindersEnabled())) return;
     if (!(await Notifications.getPermissionsAsync()).granted) return;
@@ -72,14 +95,14 @@ async function runSync(): Promise<void> {
       });
     }
 
-    await sendBudgetWarnings();
+    await sendBudgetWarnings(Notifications);
   } catch (error) {
     // Reminders are best-effort; a failure must never break the app.
     if (__DEV__) console.warn('[reminders] sync failed', error);
   }
 }
 
-async function sendBudgetWarnings(): Promise<void> {
+async function sendBudgetWarnings(Notifications: NonNullable<ReturnType<typeof getNotifications>>): Promise<void> {
   const month = currentMonthKey();
   const budget = await budgetsRepository.getBudgetForMonth(month);
   if (!budget) return;

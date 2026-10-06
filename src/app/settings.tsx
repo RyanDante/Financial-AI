@@ -11,7 +11,7 @@ import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusB
 import { useFinanceStore } from '@/store/financeStore';
 import { aiStatus } from '@/ai';
 import { useAppLockStore } from '@/features/security/appLock.store';
-import { disableReminders, enableReminders, remindersEnabled } from '@/features/reminders/reminders.service';
+import { disableReminders, enableReminders, remindersEnabled, remindersUnsupportedHere } from '@/features/reminders/reminders.service';
 import { calculateBalance } from '@/finance/calculations';
 import { getAccountTypeMeta } from '@/features/accounts/accountTypes';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -70,13 +70,17 @@ function RemindersSection() {
         <Switch
           value={enabled}
           onValueChange={toggle}
-          disabled={isBusy}
+          disabled={isBusy || remindersUnsupportedHere}
           accessibilityLabel="Reminders"
           trackColor={{ false: colors['surface-elevated'], true: colors.accent }}
           thumbColor={colors.surface}
         />
       </View>
-      {message ? <Caption className="text-warning">{message}</Caption> : null}
+      {remindersUnsupportedHere ? (
+        <Caption className="text-warning">Reminders need a development build on Android; Expo Go doesn&rsquo;t support them.</Caption>
+      ) : message ? (
+        <Caption className="text-warning">{message}</Caption>
+      ) : null}
     </Card>
   );
 }

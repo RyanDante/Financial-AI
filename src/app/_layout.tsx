@@ -4,7 +4,6 @@ import { AppState, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,7 +19,7 @@ import { modalOptions, usePageHeaderOptions } from '@/components/navigation/page
 import { useAppLockStore } from '@/features/security/appLock.store';
 import { LockScreen } from '@/components/ui/LockScreen';
 import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
-import { configureNotifications, syncReminders } from '@/features/reminders/reminders.service';
+import { configureNotifications, onReminderTapped, syncReminders } from '@/features/reminders/reminders.service';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 configureNotifications();
@@ -61,11 +60,7 @@ export default function RootLayout() {
 
   // Tapping a reminder opens the page it's about.
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const url = response.notification.request.content.data?.url;
-      if (url === '/bills' || url === '/debts' || url === '/budgets') router.push(url);
-    });
-    return () => subscription.remove();
+    return onReminderTapped((url) => router.push(url));
   }, []);
 
   // Re-lock after a minute in the background (app lock, Settings › Security).
