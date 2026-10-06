@@ -3,6 +3,7 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Body, Button, Caption, Label } from '@/components/ui';
+import { ChipGroup } from '@/components/ui/ChipGroup';
 import { transactionsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -135,7 +136,7 @@ export default function NewTransactionScreen() {
       {accounts.length > 1 ? (
         <View className="gap-sm">
           <Label>Account</Label>
-          <ChipRow
+          <ChipGroup
             options={accounts.map((a) => ({ id: a.id, label: a.name }))}
             selectedId={selectedAccountId}
             onSelect={setAccountId}
@@ -145,7 +146,7 @@ export default function NewTransactionScreen() {
 
       <View className="gap-sm">
         <Label>Category</Label>
-        <ChipRow options={relevantCategories.map((c) => ({ id: c.id, label: c.name }))} selectedId={categoryId} onSelect={setCategoryId} />
+        <ChipGroup options={relevantCategories.map((c) => ({ id: c.id, label: c.name }))} selectedId={categoryId} onSelect={setCategoryId} />
       </View>
 
       <View className="gap-sm">
@@ -163,26 +164,5 @@ export default function NewTransactionScreen() {
 
       <Button label={isSaving ? 'Saving…' : 'Save transaction'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </ScrollView>
-  );
-}
-
-function ChipRow({ options, selectedId, onSelect }: { options: { id: string; label: string }[]; selectedId: string | null; onSelect: (id: string) => void }) {
-  return (
-    <View className="flex-row flex-wrap gap-sm">
-      {options.map((option) => {
-        const isSelected = option.id === selectedId;
-        return (
-          <Pressable
-            key={option.id}
-            onPress={() => onSelect(option.id)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isSelected }}
-            className={cn('rounded-sm border px-md py-sm', isSelected ? 'border-accent bg-accent-muted' : 'border-border bg-surface')}
-          >
-            <Label className={isSelected ? 'text-accent-secondary' : undefined}>{option.label}</Label>
-          </Pressable>
-        );
-      })}
-    </View>
   );
 }

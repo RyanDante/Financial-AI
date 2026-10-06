@@ -8,3 +8,4 @@ export * from './IconCircle';
 export * from './EmptyState';
 export * from './ScreenHeader';
 export * from './SyncStatusBadge';
+export * from './ChipGroup';

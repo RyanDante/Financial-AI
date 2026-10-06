@@ -1,10 +1,13 @@
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { AmountText, Badge, Body, Card, Caption, EmptyState, Label, ProgressBar, ScreenHeader } from '@/components/ui';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 import { RecommendationCarousel } from '@/components/finance/RecommendationCarousel';
 import { useRecommendations } from '@/features/recommendations/useRecommendations';
+import { useBills } from '@/features/bills/useBills';
+import { formatDue, toBillItems } from '@/features/bills/bills';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { calculateAvailableMoney, calculateGoalProgress } from '@/finance/calculations';
@@ -16,6 +19,9 @@ export default function HomeScreen() {
     useFinanceStore();
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const recommendations = useRecommendations();
+  const { subscriptions, recurringExpenses } = useBills();
+  const bills = toBillItems(subscriptions, recurringExpenses);
+  const nextBill = bills[0];
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -85,6 +91,27 @@ export default function HomeScreen() {
           <Caption>Spent this month</Caption>
           <AmountText valueMinor={monthlySpendingMinor} currency={currency} size="sm" tone="danger" />
         </Card>
+      </View>
+
+      <View className="px-lg pt-lg">
+        <Pressable onPress={() => router.push('/bills')} accessibilityRole="button" accessibilityLabel="Upcoming bills. Open bills and subscriptions">
+          <Card className="flex-row items-center gap-md">
+            <View className="flex-1 gap-xs">
+              <Label>Upcoming bills</Label>
+              {nextBill ? (
+                <>
+                  <AmountText valueMinor={upcomingObligationsMinor} currency={currency} size="sm" />
+                  <Caption numberOfLines={1}>
+                    Per month · next: {nextBill.name}, {formatDue(nextBill).toLowerCase()}
+                  </Caption>
+                </>
+              ) : (
+                <Caption>Add rent, electricity and subscriptions to plan ahead.</Caption>
+              )}
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors['text-muted']} />
+          </Card>
+        </Pressable>
       </View>
 
       <View className="px-lg pt-lg">

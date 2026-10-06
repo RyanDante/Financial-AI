@@ -63,3 +63,10 @@ export async function createRecurringExpense(input: CreateRecurringExpenseInput)
   );
   return { ...input, id, categoryId: input.categoryId ?? null, nextDueAt: input.nextDueAt ?? null, isActive: true };
 }
+
+/** Mirrors subscriptionsRepository.setSubscriptionActive: "stop tracking" keeps the row (and its sync history). */
+export async function setRecurringExpenseActive(id: string, isActive: boolean): Promise<void> {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+  await db.runAsync('UPDATE recurring_expenses SET is_active = ?, updated_at = ?, version = version + 1 WHERE id = ?', isActive ? 1 : 0, now, id);
+}

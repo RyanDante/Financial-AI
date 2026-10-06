@@ -2,6 +2,7 @@ import type { Ionicons } from '@expo/vector-icons';
 import { calculateBudgetRemaining, calculateMonthlySpending } from '@/finance/calculations';
 import { formatMoney } from '@/utils/currency';
 import { daysBetween, MS_PER_DAY } from '@/utils/months';
+import { formatDue, toBillItems } from '@/features/bills/bills';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { BudgetCategory, Category, RecurringExpense, Subscription, Transaction } from '@/types/finance';
 import { ESSENTIALS, type Essential } from './essentials';
@@ -103,22 +104,15 @@ function repeatPurchases(input: RecommendationInput, asOf: Date): Recommendation
 }
 
 function billsDueSoon(input: RecommendationInput, asOf: Date): Recommendation[] {
-  const bills = [
-    ...input.subscriptions.filter((s) => s.isActive && s.nextBillingAt).map((s) => ({ id: `sub-${s.id}`, name: s.name, categoryId: s.categoryId, amountMinor: s.amountMinor, currency: s.currency, dueAt: s.nextBillingAt as string })),
-    ...input.recurringExpenses.filter((r) => r.isActive && r.nextDueAt).map((r) => ({ id: `rec-${r.id}`, name: r.name, categoryId: r.categoryId, amountMinor: r.amountMinor, currency: r.currency, dueAt: r.nextDueAt as string })),
-  ];
-
-  return bills
-    .map((bill) => ({ bill, inDays: daysUntil(new Date(bill.dueAt), asOf) }))
-    .filter(({ inDays }) => inDays >= 0 && inDays <= BILL_HORIZON_DAYS)
-    .sort((a, b) => a.inDays - b.inDays)
-    .map(({ bill, inDays }) => ({
+  return toBillItems(input.subscriptions, input.recurringExpenses, asOf)
+    .filter((bill) => bill.inDays !== null && bill.inDays <= BILL_HORIZON_DAYS)
+    .map((bill) => ({
       id: `bill-${bill.id}`,
       kind: 'bill' as const,
       icon: 'calendar-outline' as const,
       reason: 'Bill coming up',
       title: bill.name,
-      detail: `${formatMoney(bill.amountMinor, bill.currency)} due ${inDays === 0 ? 'today' : inDays === 1 ? 'tomorrow' : `in ${inDays} days`}`,
+      detail: `${formatMoney(bill.amountMinor, bill.currency)} ${formatDue(bill).toLowerCase()}`,
       prefill: { categoryId: bill.categoryId, merchant: bill.name },
     }));
 }
@@ -159,12 +153,6 @@ function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-/** Calendar days until `date` (0 = today), ignoring the time of day. */
-function daysUntil(date: Date, asOf: Date): number {
-  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  return Math.round((startOf(date) - startOf(asOf)) / MS_PER_DAY);
 }
 
 function dayOfYear(date: Date): number {

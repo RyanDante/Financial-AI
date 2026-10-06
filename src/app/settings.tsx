@@ -12,7 +12,7 @@ import { useSyncStore } from '@/store/syncStore';
 import { useThemeStore } from '@/features/theme/theme.store';
 import type { ThemeMode } from '@/features/theme/theme.types';
 import { CURRENCIES, type CurrencyCode } from '@/constants/currencies';
-import { getColors } from '@/constants/theme';
+import { getColors, useThemeColors } from '@/constants/theme';
 import { cn } from '@/utils/cn';
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -131,6 +131,7 @@ function MoneyAccountsSection() {
 }
 
 export default function SettingsScreen() {
+  const colors = useThemeColors();
   const { defaultCurrency, setDefaultCurrency } = useSettingsStore();
 
   return (
@@ -138,6 +139,16 @@ export default function SettingsScreen() {
       <AccountSection />
 
       <MoneyAccountsSection />
+
+      <Pressable onPress={() => router.push('/bills')} accessibilityRole="button">
+        <Card className="flex-row items-center justify-between">
+          <View>
+            <Label>Bills & subscriptions</Label>
+            <Caption>Rent, utilities and plans F-AI sets money aside for</Caption>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors['text-muted']} />
+        </Card>
+      </Pressable>
 
       <AppearanceSection />
 

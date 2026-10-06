@@ -43,6 +43,12 @@ export function daysBetween(from: Date, to: Date): number {
   return Math.floor((to.getTime() - from.getTime()) / MS_PER_DAY);
 }
 
+/** Calendar days from `asOf` until `date` (0 = today, 1 = tomorrow, negative = past), ignoring the time of day. */
+export function calendarDaysUntil(date: Date, asOf = new Date()): number {
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((startOf(date) - startOf(asOf)) / MS_PER_DAY);
+}
+
 function parseMonth(month: MonthKey): [number, number] {
   const [year, monthNumber] = month.split('-').map(Number);
   return [year, monthNumber - 1];

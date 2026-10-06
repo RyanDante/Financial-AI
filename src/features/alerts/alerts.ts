@@ -4,11 +4,12 @@ import { formatMoney } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { SyncStatus } from '@/services/sync/sync.types';
 import type { BudgetCategory, Category, Goal, Transaction } from '@/types/finance';
+import { formatDue, type BillItem } from '@/features/bills/bills';
 
 export type AlertSeverity = 'danger' | 'warning';
 
 /** Where tapping an alert takes the user. Only routes that already exist. */
-export type AlertHref = '/' | '/budgets' | '/goals' | '/settings';
+export type AlertHref = '/' | '/budgets' | '/goals' | '/settings' | '/bills';
 
 export interface Alert {
   id: string;
@@ -35,8 +36,13 @@ export interface AlertInput {
   /** Only shown for `blocked`, whose message is written for the user; `error` messages can be raw. */
   syncErrorMessage: string | null;
   attachmentUploadError: string | null;
+  /** From toBillItems; defaults to none. */
+  bills?: BillItem[];
   asOf?: Date;
 }
+
+/** Bills due this many calendar days ahead (or sooner) raise an alert. */
+export const BILL_ALERT_DAYS = 3;
 
 const SEVERITY_ORDER: Record<AlertSeverity, number> = { danger: 0, warning: 1 };
 
@@ -95,6 +101,18 @@ export function buildAlerts(input: AlertInput): Alert[] {
       title: `${goal.name} is past its deadline`,
       detail: `${formatMoney(progress.remainingMinor, goal.currency)} still to go.`,
       href: '/goals',
+    });
+  }
+
+  for (const bill of input.bills ?? []) {
+    if (bill.inDays === null || bill.inDays > BILL_ALERT_DAYS) continue;
+    alerts.push({
+      id: `bill-${bill.id}`,
+      severity: 'warning',
+      icon: 'calendar-outline',
+      title: `${bill.name}: ${formatDue(bill).toLowerCase()}`,
+      detail: `${formatMoney(bill.amountMinor, bill.currency)} to pay.`,
+      href: '/bills',
     });
   }
 

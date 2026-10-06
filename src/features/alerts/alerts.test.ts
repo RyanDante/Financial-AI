@@ -1,4 +1,5 @@
 import { buildAlerts, type AlertInput } from './alerts';
+import { toBillItems } from '@/features/bills/bills';
 import type { BudgetCategory, Category, Goal, Transaction } from '@/types/finance';
 
 const STAMP = '2026-09-01T00:00:00.000Z';
@@ -82,6 +83,15 @@ describe('buildAlerts', () => {
 
     const [blocked] = buildAlerts(input({ syncStatus: 'blocked', syncErrorMessage: 'Sign in with that account to sync it.' }));
     expect(blocked).toMatchObject({ id: 'sync-blocked', detail: 'Sign in with that account to sync it.' });
+  });
+
+  it('warns about bills due within 3 days only', () => {
+    const asOf = new Date(2026, 8, 20, 12);
+    const rent = { id: 'r', name: 'Rent', categoryId: null, amountMinor: 120_000, currency: 'XAF' as const, frequency: 'monthly' as const, nextDueAt: new Date(2026, 8, 22).toISOString(), isActive: true };
+    const later = { ...rent, id: 'l', name: 'Insurance', nextDueAt: new Date(2026, 8, 28).toISOString() };
+    const alerts = buildAlerts(input({ asOf, bills: toBillItems([], [rent, later], asOf) }));
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({ id: 'bill-recurring-r', severity: 'warning', title: 'Rent: due in 2 days', detail: '120,000 FCFA to pay.', href: '/bills' });
   });
 
   it('ignores offline and syncing states', () => {
