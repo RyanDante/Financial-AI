@@ -2,7 +2,10 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import { Body, Button, Caption, Card, Label, SyncStatusBadge } from '@/components/ui';
+import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusBadge } from '@/components/ui';
+import { useFinanceStore } from '@/store/financeStore';
+import { calculateBalance } from '@/finance/calculations';
+import { getAccountTypeMeta } from '@/features/accounts/accountTypes';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useSyncStore } from '@/store/syncStore';
@@ -96,12 +99,45 @@ function AccountSection() {
   );
 }
 
+/** The money accounts (cash, mobile money, bank) that balances are computed from. */
+function MoneyAccountsSection() {
+  const { accounts, transactions } = useFinanceStore();
+
+  return (
+    <Card className="gap-sm">
+      <Label>Your accounts</Label>
+      {accounts.map((account, index) => {
+        const meta = getAccountTypeMeta(account.type);
+        return (
+          <Pressable
+            key={account.id}
+            onPress={() => router.push({ pathname: '/account/edit', params: { id: account.id } })}
+            accessibilityRole="button"
+            accessibilityHint="Edit this account"
+            className={cn('flex-row items-center gap-md py-sm', index > 0 && 'border-t border-border')}
+          >
+            <IconCircle name={meta.icon} size={32} />
+            <View className="flex-1">
+              <Body numberOfLines={1}>{account.name}</Body>
+              <Caption>{meta.label}</Caption>
+            </View>
+            <AmountText valueMinor={calculateBalance(account, transactions)} currency={account.currency} size="sm" />
+          </Pressable>
+        );
+      })}
+      <Button label="Add account" variant="secondary" onPress={() => router.push('/account/edit')} />
+    </Card>
+  );
+}
+
 export default function SettingsScreen() {
   const { defaultCurrency, setDefaultCurrency } = useSettingsStore();
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <AccountSection />
+
+      <MoneyAccountsSection />
 
       <AppearanceSection />
 

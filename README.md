@@ -76,7 +76,13 @@ enforced at the type/runtime level, not just by convention — see `docs/AI_ARCH
 "Tool access control". Also added: a light/dark theme toggle in Settings (`src/features/theme/`),
 backed by CSS-variable theming so existing classNames didn't need to change.
 
-Known gaps to pick up next: budget category limits aren't editable from the UI yet, no app
+**Data management:** transactions can be edited and deleted (soft delete, synced as a
+delete), goals take contributions from a goal detail screen, budget category limits are
+editable, and Settings manages money accounts (cash, mobile money, bank) with starting
+balances. The tab screens share a fixed app bar with an Alerts screen.
+
+Known gaps to pick up next: no screens yet for subscriptions, recurring bills, debts or
+income sources (so upcoming obligations stay at 0), goals can't be renamed or deleted, no app
 lock/biometrics, no OCR/receipt-data-extraction (the attachment pipeline is OCR-ready — see
 `docs/FIREBASE.md` "Offline file handling"), AI conversation sync isn't wired up (paths are
 reserved — see `docs/FIREBASE.md`), sync/upload retries happen by re-running sync rather than a
