@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { AmountText, Badge, Body, Card, Caption, EmptyState, Label, ProgressBar, ScreenHeader } from '@/components/ui';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 import { useFinanceStore } from '@/store/financeStore';
@@ -40,11 +39,6 @@ export default function HomeScreen() {
       <ScreenHeader
         title="Overview"
         subtitle={accounts.length > 0 ? `${accounts.length} account${accounts.length > 1 ? 's' : ''}` : undefined}
-        right={
-          <Pressable onPress={() => router.push('/settings')} className="rounded-full p-sm">
-            <Ionicons name="settings-outline" size={22} color={colors['text-secondary']} />
-          </Pressable>
-        }
       />
 
       <View className="px-lg">

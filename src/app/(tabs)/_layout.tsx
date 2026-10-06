@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { getColors } from '@/constants/theme';
+import { AppBar } from '@/components/ui/AppBar';
 
 const TAB_BAR_CONTENT_HEIGHT = 58;
 
@@ -18,7 +19,9 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
+        // One fixed AppBar above every tab: it owns the top safe-area inset.
+        headerShown: true,
+        header: () => <AppBar />,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors['text-muted'],
         tabBarStyle: {

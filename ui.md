@@ -646,11 +646,28 @@ Routing is owned by Expo Router and **is not changed by this document.** Only pr
 - Content scrolls *under* the bar — every scroll container gets `pb` of
   `4xl + tab bar height + inset`, never a magic number.
 
+### App bar
+
+- `AppBar` (`src/components/ui/AppBar.tsx`) is the fixed bar above every tab screen, mounted
+  once as the Tabs `header` in `src/app/(tabs)/_layout.tsx`. It does not scroll.
+- It **owns the top safe-area inset** (`paddingTop: insets.top`), then a 52pt row on
+  `bg-background` with a hairline `border-b border-border`.
+- Left: the name "F-AI" in `font-display` 20/24. Right: the alerts bell
+  (`notifications-outline`) and settings (`settings-outline`), 44×44 targets, icons in
+  `text-secondary`. A `danger` dot on the bell when `useAlerts()` returns anything; the
+  bell's `accessibilityLabel` states the count.
+- Screens below it that use `KeyboardAvoidingView` on iOS offset by `useAppBarHeight()`.
+- The bell opens `/alerts`: a list built by `buildAlerts` (`src/features/alerts/alerts.ts`)
+  from existing data only: negative safe-to-spend, over-budget categories, overdue goals,
+  sync failures, failed attachment uploads. Danger first. No push notifications.
+
 ### Screen headers
 
-- `ScreenHeader` sits inside the scroll view (not sticky) for simplicity and correctness
-  across modals. It carries: title (`Heading`), optional overline context, and a right slot.
-- Top padding respects the safe area via `useSafeAreaInsets()`, not a hardcoded 24.
+- `ScreenHeader` sits inside the scroll view (not sticky), directly below the `AppBar`. It
+  carries: title (`Heading`), optional subtitle, and a right slot for the screen's own action
+  (e.g. `+`). Settings lives in the `AppBar`, not here.
+- Top padding is `pt-md`: the `AppBar` already handles the safe area. Stack screens without
+  the `AppBar` (modals, detail screens) must handle `insets.top` themselves.
 - Headers on the AI screen are **glass** because chat scrolls beneath them.
 
 ---
@@ -1181,7 +1198,7 @@ one of them, the design is wrong — not the logic.
 | Fields | `src/components/ui/Input.tsx`, `AmountInput.tsx` | `Input`, `AmountInput` |
 | Progress | `src/components/ui/ProgressBar.tsx`, `SegmentedMeter.tsx` | `ProgressBar`, `SegmentedMeter` |
 | Status | `src/components/ui/Badge.tsx`, `SyncStatusBadge.tsx` | `Badge`, `SyncStatusBadge` |
-| Structure | `src/components/ui/ScreenHeader.tsx`, `SectionHeader.tsx`, `Sheet.tsx`, `Skeleton.tsx`, `EmptyState.tsx`, `IconCircle.tsx` | — |
+| Structure | `src/components/ui/AppBar.tsx`, `src/components/ui/ScreenHeader.tsx`, `SectionHeader.tsx`, `Sheet.tsx`, `Skeleton.tsx`, `EmptyState.tsx`, `IconCircle.tsx` | — |
 | Metrics | `src/components/finance/Metric.tsx` | `Metric` |
 | AI surfaces | `src/components/ai/ChatBubble.tsx`, `ToolActivity.tsx`, `SuggestedPrompts.tsx` | — |
 

@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '@/components/ui';
+import { useAppBarHeight } from '@/components/ui/AppBar';
 import { useThemeColors } from '@/constants/theme';
 import { ChatBubble } from '@/components/ai/ChatBubble';
 import { SuggestedPrompts } from '@/components/ai/SuggestedPrompts';
 import { useAIStore } from '@/store/aiStore';
 
 export default function AIScreen() {
+  const appBarHeight = useAppBarHeight();
   const colors = useThemeColors();
   const { messages, isSending, ensureConversation, sendMessage } = useAIStore();
   const [draft, setDraft] = useState('');
@@ -27,7 +29,11 @@ export default function AIScreen() {
   };
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-background" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      className="flex-1 bg-background"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? appBarHeight : 0}
+    >
       <ScreenHeader title="F-AI Copilot" subtitle="Ask about your money — I only use your real data." />
 
       <ScrollView ref={scrollRef} className="flex-1 px-lg" contentContainerClassName="pb-lg">
