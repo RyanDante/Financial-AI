@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { Button, Card, EmptyState, Label, ScreenHeader } from '@/components/ui';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { Button, Caption, Card, EmptyState, Label, ScreenHeader } from '@/components/ui';
 import { BudgetCategoryRow } from '@/components/finance/BudgetCategoryRow';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -24,20 +25,23 @@ export default function BudgetsScreen() {
   const [isCreating, setIsCreating] = useState(false);
   const month = currentMonthKey();
 
-  useEffect(() => {
-    let isCurrent = true;
-    (async () => {
-      const existing = await budgetsRepository.getBudgetForMonth(month);
-      const existingCategories = existing ? await budgetsRepository.listBudgetCategories(existing.id) : [];
-      if (isCurrent) {
-        setBudget(existing);
-        setBudgetCategories(existingCategories);
-      }
-    })();
-    return () => {
-      isCurrent = false;
-    };
-  }, [month]);
+  // Reload on focus so a limit changed in the budget/limit modal shows on return.
+  useFocusEffect(
+    useCallback(() => {
+      let isCurrent = true;
+      (async () => {
+        const existing = await budgetsRepository.getBudgetForMonth(month);
+        const existingCategories = existing ? await budgetsRepository.listBudgetCategories(existing.id) : [];
+        if (isCurrent) {
+          setBudget(existing);
+          setBudgetCategories(existingCategories);
+        }
+      })();
+      return () => {
+        isCurrent = false;
+      };
+    }, [month]),
+  );
 
   const expenseCategories = categories.filter((c) => c.type === 'expense');
 
@@ -76,18 +80,25 @@ export default function BudgetsScreen() {
           </Card>
         ) : (
           <Card>
-            <Label className="pb-sm">Category limits</Label>
+            <Label>Category limits</Label>
+            <Caption className="pb-sm">Tap a category to change its limit.</Caption>
             {budgetCategories.map((bc) => {
               const category = categoryById.get(bc.categoryId);
               if (!category) return null;
               return (
-                <BudgetCategoryRow
+                <Pressable
                   key={bc.id}
-                  category={category}
-                  limitMinor={bc.limitMinor}
-                  spentMinor={spentByCategory(bc.categoryId)}
-                  currency={budget.currency}
-                />
+                  onPress={() =>
+                    router.push({
+                      pathname: '/budget/limit',
+                      params: { budgetCategoryId: bc.id, categoryId: bc.categoryId, limitMinor: String(bc.limitMinor), currency: budget.currency },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityHint="Changes this category's monthly limit"
+                >
+                  <BudgetCategoryRow category={category} limitMinor={bc.limitMinor} spentMinor={spentByCategory(bc.categoryId)} currency={budget.currency} />
+                </Pressable>
               );
             })}
           </Card>
