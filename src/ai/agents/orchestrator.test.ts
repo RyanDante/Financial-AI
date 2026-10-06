@@ -138,7 +138,9 @@ describe('Orchestrator routing', () => {
 
     const response = await orchestrator.handle('Will I reach my goal by March?', context, noopTools());
 
-    expect(response.warnings[0]).toContain('goal repository exploded');
+    // Graceful, and the raw error (which can hold SQL or stack details) never reaches the user.
+    expect(response.warnings[0]).toBe('Fake goal agent failed.');
+    expect(response.message).not.toContain('goal repository exploded');
     expect(response.message).not.toContain('undefined');
     expect(response.agentName).toBe('Fake goal agent'); // still named, so the UI can show which specialist failed
   });
@@ -158,6 +160,7 @@ describe('Orchestrator routing', () => {
 
     const response = await orchestrator.handle('How much did I spend?', context, noopTools());
 
-    expect(response.warnings[0]).toMatch(/not in this agent's allowlist/i);
+    expect(response.warnings[0]).toBe('Fake spending agent failed.');
+    expect(response.message).not.toContain('deleteEverything');
   });
 });

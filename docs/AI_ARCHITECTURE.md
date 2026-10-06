@@ -139,6 +139,58 @@ reaches for:
 Nothing about swapping `MockAIProvider` for a real one requires touching `src/ai/index.ts`,
 `src/store/aiStore.ts`, or any screen — that's the point of the interface.
 
+## Real models: Claude, OpenAI, Gemini
+
+The copilot can answer with a real model, chosen in `.env` (see `.env.example`):
+`EXPO_PUBLIC_AI_PROVIDER` = `anthropic` | `openai` | `gemini` | `mock`, plus
+`EXPO_PUBLIC_AI_API_KEY`, `EXPO_PUBLIC_AI_MODEL` (optional for Claude, default
+`claude-opus-5-5`; required for the others) and `EXPO_PUBLIC_AI_BASE_URL` (OpenAI-compatible
+hosts). `src/ai/config.ts` validates them; anything missing means `mock`.
+
+**Keys.** `EXPO_PUBLIC_*` values are compiled into the bundle, so this is a development setup
+only. Settings shows a warning while a key is configured. A release build must route model calls
+through a server that holds the key (for example a Firebase Cloud Function); the `LLMClient`
+interface below is the seam where that client would plug in.
+
+**Layers** (`src/ai/llm/`):
+
+| File | Role |
+|---|---|
+| `types.ts` | Provider-neutral `LLMClient.complete({ system, turns, tools })` with JSON Schema tools |
+| `anthropicClient.ts` | Claude via `@anthropic-ai/sdk` (beta Messages API; effort `medium`; server-side refusal fallbacks enabled) |
+| `openaiClient.ts` | Chat Completions over REST (OpenAI or compatible hosts) |
+| `geminiClient.ts` | `models/{model}:generateContent` over REST |
+| `http.ts` | 20 s timeout, one retry on network/429/5xx (the same policy the Anthropic SDK applies) |
+
+Each client re-sends the model's own assistant payload (`native`) unchanged inside a tool loop,
+because some vendors reject or degrade on edited assistant turns (Claude thinking blocks, Gemini
+thought signatures).
+
+**How an answer is produced** (`src/ai/agents/orchestrator.ts` with an `OrchestratorLLM`):
+
+1. **Route.** The regex classifier runs first. If it returns `unknown`, `routeWithLLM` asks the
+   model to pick one intent from the closed list of registered intents (or `unknown`).
+2. **Answer.** `runAgentWithLLM` runs the specialist as a client-side tool loop: only its
+   `allowedTools` are offered (and `createScopedTools` still enforces the allowlist), at most 6
+   model calls, the last 10 messages as context. The turn ends with the `submit_answer` tool,
+   whose schema is `{ claims: [{ kind, text }], followUps }`, so claim labels survive on every
+   vendor. A plain-text reply is kept only as an `ai_interpretation` claim.
+3. **Guard.** `guardClaims` (`numberGuard.ts`) checks every amount in a FACT / PROJECTION claim
+   against the numbers the tools returned this turn (also accepting minor→major ÷100); a
+   CALCULATION may also be a sum or difference of two such numbers. Failing claims are
+   downgraded to INTERPRETATION with a visible warning.
+4. **Fall back.** Any model error, refusal, timeout, oversized answer, empty answer or 6-step
+   overrun runs the agent's deterministic `execute` instead, with a short "Answered offline"
+   note. The copilot always answers.
+
+Tool inputs are real JSON Schema (`financialTools.ts`) and are validated by
+`ToolRegistry.execute` (`validate.ts`). Invalid arguments and allowlist violations go back to
+the model as error results so it can correct itself; other tool errors are reported generically,
+so SQL and stack details never reach the model or the user. The system prompt tells the model to
+treat text inside tool results (e.g. transaction notes) as data, not instructions.
+
+Tests use a scripted fake `LLMClient` (`llmOrchestrator.test.ts`); no test calls a live API.
+
 ## Local vs. cloud AI
 
 `src/ai/router/index.ts` → `AIRouter`, constructed with `{ local?, cloud?, fallback }`. Today

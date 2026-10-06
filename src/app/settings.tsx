@@ -9,6 +9,7 @@ import { DEFAULT_CURRENCY } from '@/constants/currencies';
 import { parseMoneyInput } from '@/utils/currency';
 import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusBadge } from '@/components/ui';
 import { useFinanceStore } from '@/store/financeStore';
+import { aiStatus } from '@/ai';
 import { calculateBalance } from '@/finance/calculations';
 import { getAccountTypeMeta } from '@/features/accounts/accountTypes';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -261,6 +262,13 @@ export default function SettingsScreen() {
           account in Firebase, scoped so only you can read or write it — see docs/FIREBASE.md for the full picture.
           Security (app lock, biometrics) is planned for a future update.
         </Caption>
+        <Caption>
+          AI copilot: {aiStatus.provider === 'mock' ? 'offline (built-in rules)' : `${aiStatus.provider} · ${aiStatus.model}`}
+          {aiStatus.problem ? `. ${aiStatus.problem}` : ''}
+        </Caption>
+        {aiStatus.provider !== 'mock' ? (
+          <Caption className="text-warning">Development key: the AI key in .env is built into this app. Don&rsquo;t share or publish this build.</Caption>
+        ) : null}
       </Card>
     </ScrollView>
   );

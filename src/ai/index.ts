@@ -5,12 +5,33 @@ import { registerFinancialTools } from './tools/financialTools';
 import { MockAIProvider } from './providers/mockProvider';
 import type { AIProviderMessage } from './providers/types';
 import { AIRouter } from './router';
+import { aiConfig } from './config';
+import { createLLMClient } from './llm/createClient';
+import { LLMProvider } from './providers/llmProvider';
 
 export const toolRegistry = new ToolRegistry();
 registerFinancialTools(toolRegistry);
 
 const mockProvider = new MockAIProvider();
-export const aiRouter = new AIRouter({ fallback: mockProvider });
+const llmClient = createLLMClient(aiConfig);
+
+/**
+ * `cloud` is the configured model (Claude, OpenAI or Gemini) when .env sets
+ * one; otherwise every message goes to the deterministic MockAIProvider.
+ * The model path itself still falls back to the deterministic agents when
+ * offline, so the copilot always answers.
+ */
+export const aiRouter = new AIRouter({
+  fallback: mockProvider,
+  cloud: llmClient ? new LLMProvider(llmClient, toolRegistry) : undefined,
+});
+
+/** What's answering, for Settings › About and the AI screen. */
+export const aiStatus = {
+  provider: aiConfig.provider,
+  model: llmClient?.model ?? null,
+  problem: aiConfig.problem,
+};
 
 export interface SendUserMessageResult {
   userMessage: AIMessage;

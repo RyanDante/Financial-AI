@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ScreenHeader } from '@/components/ui';
+import { Caption, ScreenHeader } from '@/components/ui';
+import { aiStatus } from '@/ai';
 import { useAppBarHeight } from '@/components/ui/AppBar';
 import { useThemeColors } from '@/constants/theme';
 import { ChatBubble } from '@/components/ai/ChatBubble';
 import { SuggestedPrompts } from '@/components/ai/SuggestedPrompts';
 import { useAIStore } from '@/store/aiStore';
+
+const PROVIDER_LABELS = { anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', mock: 'the offline copilot' } as const;
 
 export default function AIScreen() {
   const appBarHeight = useAppBarHeight();
@@ -35,6 +38,11 @@ export default function AIScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? appBarHeight : 0}
     >
       <ScreenHeader title="F-AI Copilot" subtitle="Ask about your money — I only use your real data." />
+      <Caption className="px-lg pb-sm">
+        {aiStatus.provider === 'mock'
+          ? 'Offline copilot: answers come from built-in rules on this phone.'
+          : `Answers by ${PROVIDER_LABELS[aiStatus.provider]}. Your question and the figures it needs are sent to ${PROVIDER_LABELS[aiStatus.provider]}.`}
+      </Caption>
 
       <ScrollView ref={scrollRef} className="flex-1 px-lg" contentContainerClassName="pb-lg">
         {messages.length === 0 ? (
@@ -46,6 +54,12 @@ export default function AIScreen() {
             .filter((m) => m.role === 'user' || m.role === 'assistant')
             .map((message) => <ChatBubble key={message.id} message={message} />)
         )}
+        {isSending ? (
+          <View className="flex-row items-center gap-sm py-sm" accessibilityLiveRegion="polite">
+            <ActivityIndicator size="small" color={colors['accent-secondary']} />
+            <Caption>Checking your data…</Caption>
+          </View>
+        ) : null}
       </ScrollView>
 
       <View className="flex-row items-center gap-sm border-t border-border bg-surface px-lg py-md">

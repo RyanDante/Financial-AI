@@ -7,13 +7,14 @@ import { purchaseAgent } from './purchaseAgent';
 import { forecastAgent } from './forecastAgent';
 import { subscriptionAgent } from './subscriptionAgent';
 import { transactionAgent } from './transactionAgent';
+import { generalAgent } from './generalAgent';
 import { documentAgent } from './documentAgent';
 import { financialSafetyAgent } from './financialSafetyAgent';
 
 export * from './types';
 export * from './toolAccess';
 export { AgentRegistry } from './registry';
-export { Orchestrator } from './orchestrator';
+export { Orchestrator, type OrchestratorLLM, type HandleOptions } from './orchestrator';
 
 /**
  * The one registry the app actually uses, with every agent registered.
@@ -32,6 +33,7 @@ export function createDefaultAgentRegistry(): AgentRegistry {
   registry.register(forecastAgent);
   registry.register(subscriptionAgent);
   registry.register(transactionAgent);
+  registry.register(generalAgent);
   registry.register(documentAgent);
   registry.register(financialSafetyAgent);
   return registry;

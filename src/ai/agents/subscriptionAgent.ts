@@ -1,7 +1,8 @@
 import { formatMoney } from '@/utils/currency';
 import { buildAgentResponse, type AgentDefinition } from './types';
 
-export const SUBSCRIPTION_AGENT_TOOLS = ['getSubscriptions'];
+/** getBills adds recurring bills (rent, utilities) and due dates for the model path; the offline answer uses getSubscriptions only. */
+export const SUBSCRIPTION_AGENT_TOOLS = ['getSubscriptions', 'getBills'];
 
 interface SubscriptionCostResult {
   monthlyTotalMinor: number;
@@ -17,7 +18,7 @@ interface SubscriptionCostResult {
 export const subscriptionAgent: AgentDefinition = {
   id: 'subscriptions',
   name: 'Subscription Agent',
-  description: 'Reports active subscriptions and their monthly cost, ranked highest first.',
+  description: 'Reports subscriptions and recurring bills: what they cost per month and what is due next.',
   supportedIntents: ['subscriptions'],
   allowedTools: SUBSCRIPTION_AGENT_TOOLS,
 

@@ -89,6 +89,12 @@ suggestions carousel on Home (purchases you repeat that look due, bills coming u
 essentials with your remaining budget; no invented prices), and a category breakdown plus
 6-month spending trend on Overview.
 
+**Real AI (development):** the copilot can answer with Claude, OpenAI (or any OpenAI-compatible
+host) or Gemini, picked in `.env` (see `.env.example`). Agents keep their tool allowlists, answer
+in labelled claims, and a number guard checks every figure against the tool results; anything
+that fails falls back to the offline agents. The key in `.env` is built into the app, so it is
+for testing on your own phone only. See `docs/AI_ARCHITECTURE.md` "Real models".
+
 Known gaps to pick up next: no screens for debts or income sources, goals can't be renamed or
 deleted, bills can't be edited (only stopped), the Overview total counts only the default
 currency's accounts, no app lock/biometrics, no OCR/receipt-data-extraction (the attachment pipeline is OCR-ready — see
