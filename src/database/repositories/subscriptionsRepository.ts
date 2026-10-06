@@ -69,3 +69,23 @@ export async function setSubscriptionActive(id: string, isActive: boolean): Prom
   const now = new Date().toISOString();
   await db.runAsync('UPDATE subscriptions SET is_active = ?, updated_at = ?, version = version + 1 WHERE id = ?', isActive ? 1 : 0, now, id);
 }
+
+export type UpdateSubscriptionInput = Partial<Omit<CreateSubscriptionInput, 'currency'>>;
+
+/** Changes a subscription's details; fields left out keep their value. */
+export async function updateSubscription(id: string, patch: UpdateSubscriptionInput): Promise<void> {
+  const db = await getDatabase();
+  const existing = await db.getFirstAsync<SubscriptionRow>('SELECT * FROM subscriptions WHERE id = ? AND deleted_at IS NULL', id);
+  if (!existing) throw new Error(`Subscription ${id} not found`);
+  const now = new Date().toISOString();
+  await db.runAsync(
+    'UPDATE subscriptions SET name = ?, category_id = ?, amount_minor = ?, billing_cycle = ?, next_billing_at = ?, updated_at = ?, version = version + 1 WHERE id = ?',
+    patch.name ?? existing.name,
+    patch.categoryId !== undefined ? patch.categoryId : existing.category_id,
+    patch.amountMinor ?? existing.amount_minor,
+    patch.billingCycle ?? existing.billing_cycle,
+    patch.nextBillingAt !== undefined ? patch.nextBillingAt : existing.next_billing_at,
+    now,
+    id,
+  );
+}

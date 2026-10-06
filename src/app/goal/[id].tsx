@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { AmountText, Button, Caption, Card, EmptyState, Heading, IconCircle, Label, ProgressBar } from '@/components/ui';
+import { AmountText, Body, Button, Caption, Card, EmptyState, Heading, IconCircle, Label, ProgressBar } from '@/components/ui';
 import { goalsRepository } from '@/database/repositories';
 import { calculateGoalProgress } from '@/finance/calculations';
 import { useFinanceStore } from '@/store/financeStore';
@@ -71,6 +71,15 @@ export default function GoalDetailScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={() => router.push({ pathname: '/goal/new', params: { id: goal.id } })} accessibilityRole="button" accessibilityLabel="Edit goal" hitSlop={8} className="min-h-[44px] justify-center">
+              <Body className="font-sans-semibold text-accent-secondary">Edit</Body>
+            </Pressable>
+          ),
+        }}
+      />
       <Card variant="raised" className="gap-md">
         <View className="flex-row items-center gap-md">
           <IconCircle

@@ -70,3 +70,23 @@ export async function setRecurringExpenseActive(id: string, isActive: boolean): 
   const now = new Date().toISOString();
   await db.runAsync('UPDATE recurring_expenses SET is_active = ?, updated_at = ?, version = version + 1 WHERE id = ?', isActive ? 1 : 0, now, id);
 }
+
+export type UpdateRecurringExpenseInput = Partial<Omit<CreateRecurringExpenseInput, 'currency'>>;
+
+/** Changes a recurring bill's details; fields left out keep their value. */
+export async function updateRecurringExpense(id: string, patch: UpdateRecurringExpenseInput): Promise<void> {
+  const db = await getDatabase();
+  const existing = await db.getFirstAsync<RecurringExpenseRow>('SELECT * FROM recurring_expenses WHERE id = ? AND deleted_at IS NULL', id);
+  if (!existing) throw new Error(`Recurring expense ${id} not found`);
+  const now = new Date().toISOString();
+  await db.runAsync(
+    'UPDATE recurring_expenses SET name = ?, category_id = ?, amount_minor = ?, frequency = ?, next_due_at = ?, updated_at = ?, version = version + 1 WHERE id = ?',
+    patch.name ?? existing.name,
+    patch.categoryId !== undefined ? patch.categoryId : existing.category_id,
+    patch.amountMinor ?? existing.amount_minor,
+    patch.frequency ?? existing.frequency,
+    patch.nextDueAt !== undefined ? patch.nextDueAt : existing.next_due_at,
+    now,
+    id,
+  );
+}

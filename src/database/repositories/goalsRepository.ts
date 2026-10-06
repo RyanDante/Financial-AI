@@ -145,3 +145,44 @@ export async function addGoalContribution(goalId: string, amountMinor: number, n
   if (!updated) throw new Error('Failed to update goal after contribution');
   return updated;
 }
+
+export interface UpdateGoalInput {
+  name?: string;
+  targetAmountMinor?: number;
+  deadline?: string | null;
+}
+
+/**
+ * Renames or retargets a goal. The saved amount isn't editable here (it
+ * comes from contributions), but the status follows the new target: a
+ * goal whose target drops to what's saved becomes completed, and one whose
+ * target rises above it becomes active again.
+ */
+export async function updateGoal(id: string, patch: UpdateGoalInput): Promise<Goal> {
+  const db = await getDatabase();
+  const existing = await getGoalById(id);
+  if (!existing) throw new Error(`Goal ${id} not found`);
+  const target = patch.targetAmountMinor ?? existing.targetAmountMinor;
+  const status: GoalStatus =
+    existing.status === 'archived' ? 'archived' : existing.currentAmountMinor >= target ? 'completed' : 'active';
+  const now = new Date().toISOString();
+  await db.runAsync(
+    'UPDATE goals SET name = ?, target_amount_minor = ?, deadline = ?, status = ?, updated_at = ?, version = version + 1 WHERE id = ?',
+    patch.name ?? existing.name,
+    target,
+    patch.deadline !== undefined ? patch.deadline : existing.deadline,
+    status,
+    now,
+    id,
+  );
+  const updated = await getGoalById(id);
+  if (!updated) throw new Error('Failed to update goal');
+  return updated;
+}
+
+/** Soft delete, so sync removes it from the cloud too. Contributions stay as history. */
+export async function deleteGoal(id: string): Promise<void> {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+  await db.runAsync('UPDATE goals SET deleted_at = ?, updated_at = ?, version = version + 1 WHERE id = ?', now, now, id);
+}

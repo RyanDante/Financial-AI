@@ -1,12 +1,9 @@
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { AmountText, Body, Button, Caption, Card, EmptyState, IconCircle, Label, Overline } from '@/components/ui';
-import { recurringExpensesRepository, subscriptionsRepository } from '@/database/repositories';
 import { useBills } from '@/features/bills/useBills';
-import { FREQUENCY_LABELS, formatDue, toBillItems, type BillItem } from '@/features/bills/bills';
-import { useFinanceStore } from '@/store/financeStore';
+import { FREQUENCY_LABELS, formatDue, toBillItems } from '@/features/bills/bills';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeColors } from '@/constants/theme';
 
@@ -14,26 +11,9 @@ import { useThemeColors } from '@/constants/theme';
 export default function BillsScreen() {
   const colors = useThemeColors();
   const { subscriptions, recurringExpenses } = useBills();
-  const loadAll = useFinanceStore((s) => s.loadAll);
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const items = toBillItems(subscriptions, recurringExpenses);
   const monthlyTotalMinor = items.filter((i) => i.currency === currency).reduce((sum, i) => sum + i.monthlyEquivalentMinor, 0);
-
-  const stopTracking = (item: BillItem) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(`Stop tracking ${item.name}?`, 'It will no longer count toward your upcoming bills or safe-to-spend amount.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Stop tracking',
-        style: 'destructive',
-        onPress: async () => {
-          if (item.source === 'subscription') await subscriptionsRepository.setSubscriptionActive(item.sourceId, false);
-          else await recurringExpensesRepository.setRecurringExpenseActive(item.sourceId, false);
-          await loadAll();
-        },
-      },
-    ]);
-  };
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
@@ -72,10 +52,10 @@ export default function BillsScreen() {
               {items.map((item, index) => (
                 <Pressable
                   key={item.id}
-                  onPress={() => stopTracking(item)}
+                  onPress={() => router.push({ pathname: '/bills/new', params: { source: item.source, id: item.sourceId } })}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.name}, ${FREQUENCY_LABELS[item.frequency]}, ${formatDue(item)}`}
-                  accessibilityHint="Stop tracking this bill"
+                  accessibilityHint="Edit or stop tracking this bill"
                   className={index > 0 ? 'flex-row items-center gap-md border-t border-border py-md' : 'flex-row items-center gap-md py-md'}
                 >
                   <IconCircle
@@ -94,7 +74,7 @@ export default function BillsScreen() {
                 </Pressable>
               ))}
             </Card>
-            <Caption>Tap a bill to stop tracking it.</Caption>
+            <Caption>Tap a bill to change it or stop tracking it.</Caption>
           </View>
         </>
       )}

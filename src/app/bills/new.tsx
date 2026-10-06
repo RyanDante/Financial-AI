@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Button, Caption, ChipGroup, Label } from '@/components/ui';
+import { Body, Button, Caption, ChipGroup, Label } from '@/components/ui';
 import { DateField } from '@/components/ui/DateField';
 import { recurringExpensesRepository, subscriptionsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeColors } from '@/constants/theme';
-import { FREQUENCY_LABELS } from '@/features/bills/bills';
-import { parseMoneyInput } from '@/utils/currency';
+import { FREQUENCY_LABELS, nextOccurrence } from '@/features/bills/bills';
+import { formatMoney, parseMoneyInput } from '@/utils/currency';
 
 type BillKind = 'bill' | 'subscription';
 type BillFrequency = 'weekly' | 'monthly' | 'yearly';
@@ -19,8 +19,15 @@ const FREQUENCIES: Record<BillKind, BillFrequency[]> = {
   subscription: ['monthly', 'yearly'],
 };
 
-/** Add a recurring bill (rent, electricity) or a subscription (TV, phone plan). */
+/**
+ * Add a recurring bill (rent, electricity) or a subscription (TV, phone
+ * plan), or edit one when opened with `?source=&id=` from the Bills page.
+ * A bill can't switch between bill and subscription; stopping it keeps
+ * its history.
+ */
 export default function NewBillScreen() {
+  const params = useLocalSearchParams<{ source?: 'subscription' | 'recurring'; id?: string }>();
+  const isEditing = Boolean(params.id && params.source);
   const colors = useThemeColors();
   const categories = useFinanceStore((s) => s.categories);
   const loadAll = useFinanceStore((s) => s.loadAll);
@@ -34,7 +41,58 @@ export default function NewBillScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [isLoaded, setIsLoaded] = useState(!isEditing);
+
+  // Edit mode: load the bill once and fill the form.
+  useEffect(() => {
+    if (!params.id || !params.source) return;
+    let isCurrent = true;
+    (async () => {
+      if (params.source === 'subscription') {
+        const sub = (await subscriptionsRepository.listSubscriptions(true)).find((s) => s.id === params.id);
+        if (!isCurrent || !sub) return;
+        setKind('subscription');
+        setFrequency(sub.billingCycle);
+        setName(sub.name);
+        setAmountInput(formatMoney(sub.amountMinor, sub.currency, { showSymbol: false }));
+        setCategoryId(sub.categoryId);
+        if (sub.nextBillingAt) setNextDue(nextOccurrence(new Date(sub.nextBillingAt), sub.billingCycle) ?? new Date());
+      } else {
+        const rec = (await recurringExpensesRepository.listRecurringExpenses(true)).find((r) => r.id === params.id);
+        if (!isCurrent || !rec) return;
+        setKind('bill');
+        setFrequency(rec.frequency === 'weekly' || rec.frequency === 'yearly' ? rec.frequency : 'monthly');
+        setName(rec.name);
+        setAmountInput(formatMoney(rec.amountMinor, rec.currency, { showSymbol: false }));
+        setCategoryId(rec.categoryId);
+        if (rec.nextDueAt) setNextDue(nextOccurrence(new Date(rec.nextDueAt), rec.frequency) ?? new Date());
+      }
+      setIsLoaded(true);
+    })();
+    return () => {
+      isCurrent = false;
+    };
+  }, [params.id, params.source]);
+
   const expenseCategories = categories.filter((c) => c.type === 'expense');
+
+  const stopTracking = () => {
+    if (!params.id) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(`Stop tracking ${name || 'this bill'}?`, 'It will no longer count toward your upcoming bills or safe-to-spend amount.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Stop tracking',
+        style: 'destructive',
+        onPress: async () => {
+          if (params.source === 'subscription') await subscriptionsRepository.setSubscriptionActive(params.id as string, false);
+          else await recurringExpensesRepository.setRecurringExpenseActive(params.id as string, false);
+          await loadAll();
+          router.back();
+        },
+      },
+    ]);
+  };
 
   const handleSave = async () => {
     const amountMinor = parseMoneyInput(amountInput, currency);
@@ -51,7 +109,13 @@ export default function NewBillScreen() {
 
     setIsSaving(true);
     const common = { name: name.trim(), categoryId, amountMinor, currency };
-    if (kind === 'subscription') {
+    if (isEditing && params.id) {
+      if (params.source === 'subscription') {
+        await subscriptionsRepository.updateSubscription(params.id, { name: common.name, categoryId, amountMinor, billingCycle: frequency === 'yearly' ? 'yearly' : 'monthly', nextBillingAt: nextDue.toISOString() });
+      } else {
+        await recurringExpensesRepository.updateRecurringExpense(params.id, { name: common.name, categoryId, amountMinor, frequency, nextDueAt: nextDue.toISOString() });
+      }
+    } else if (kind === 'subscription') {
       await subscriptionsRepository.createSubscription({ ...common, billingCycle: frequency === 'yearly' ? 'yearly' : 'monthly', nextBillingAt: nextDue.toISOString() });
     } else {
       await recurringExpensesRepository.createRecurringExpense({ ...common, frequency, nextDueAt: nextDue.toISOString() });
@@ -63,7 +127,9 @@ export default function NewBillScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
-      <View className="gap-sm">
+      <Stack.Screen options={{ title: isEditing ? (kind === 'subscription' ? 'Edit subscription' : 'Edit bill') : 'Add a bill' }} />
+      {isLoaded ? null : <Caption>Loading…</Caption>}
+      <View className={isEditing ? 'hidden' : 'gap-sm'}>
         <Label>Type</Label>
         <ChipGroup<BillKind>
           options={[
@@ -115,7 +181,13 @@ export default function NewBillScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <Button label={isSaving ? 'Saving…' : kind === 'bill' ? 'Save bill' : 'Save subscription'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
+      <Button label={isSaving ? 'Saving…' : kind === 'bill' ? 'Save bill' : 'Save subscription'} className="mt-sm" onPress={handleSave} disabled={isSaving || !isLoaded} />
+
+      {isEditing ? (
+        <Pressable onPress={stopTracking} accessibilityRole="button" className="items-center py-md">
+          <Body className="text-danger">Stop tracking</Body>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
