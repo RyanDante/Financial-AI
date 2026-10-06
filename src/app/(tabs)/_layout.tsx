@@ -1,9 +1,10 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { getColors } from '@/constants/theme';
 import { AppBar } from '@/components/ui/AppBar';
+import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
 
 const TAB_BAR_CONTENT_HEIGHT = 58;
 
@@ -15,6 +16,10 @@ export default function TabsLayout() {
   const bottomInset = Math.max(insets.bottom, 8);
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme ?? 'dark');
+  const needsOnboarding = useOnboardingStore((s) => s.status === 'needed');
+
+  // First run: send new users through setup before the tabs.
+  if (needsOnboarding) return <Redirect href="/onboarding" />;
 
   return (
     <Tabs

@@ -18,6 +18,7 @@ import { useThemeStore } from '@/features/theme/theme.store';
 import { modalOptions, usePageHeaderOptions } from '@/components/navigation/pageHeader';
 import { useAppLockStore } from '@/features/security/appLock.store';
 import { LockScreen } from '@/components/ui/LockScreen';
+import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -31,6 +32,7 @@ export default function RootLayout() {
   const initializeSync = useSyncStore((s) => s.initialize);
   const loadTheme = useThemeStore((s) => s.loadTheme);
   const loadLock = useAppLockStore((s) => s.loadLock);
+  const loadOnboarding = useOnboardingStore((s) => s.loadOnboarding);
   const isLocked = useAppLockStore((s) => s.locked);
   const { colorScheme } = useColorScheme();
   const pageHeaderOptions = usePageHeaderOptions();
@@ -38,7 +40,7 @@ export default function RootLayout() {
   useEffect(() => {
     (async () => {
       await getDatabase();
-      await Promise.all([loadAll(), loadSettings(), loadTheme(), loadLock()]);
+      await Promise.all([loadAll(), loadSettings(), loadTheme(), loadLock(), loadOnboarding()]);
       setIsDbReady(true);
     })();
     // Firebase Auth/Firestore calls here are independent of local readiness —
@@ -46,7 +48,7 @@ export default function RootLayout() {
     // both already fail gracefully offline (see auth.store.ts / sync.service.ts).
     initializeAuth();
     initializeSync();
-  }, [loadAll, loadSettings, loadTheme, loadLock, initializeAuth, initializeSync]);
+  }, [loadAll, loadSettings, loadTheme, loadLock, loadOnboarding, initializeAuth, initializeSync]);
 
   // Re-lock after a minute in the background (app lock, Settings › Security).
   useEffect(() => {
@@ -77,6 +79,7 @@ export default function RootLayout() {
           <StatusBar style={colorScheme === 'light' ? 'dark' : 'light'} />
           <Stack screenOptions={pageHeaderOptions}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
             <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="transaction/[id]" options={{ title: 'Transaction' }} />
             <Stack.Screen name="goal/[id]" options={{ title: 'Goal' }} />
