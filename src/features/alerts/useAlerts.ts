@@ -1,20 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { budgetsRepository } from '@/database/repositories';
+import { useMemo } from 'react';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useSyncStore } from '@/store/syncStore';
-import type { BudgetCategory } from '@/types/finance';
+import { useBudgetLimits } from '@/features/budgets/useBudgetLimits';
+import { currentMonthKey } from '@/utils/months';
 import { buildAlerts, type Alert } from './alerts';
-
-function currentMonthKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
 
 /**
  * The live alert list for the AppBar bell and the Alerts screen. Reads only
- * existing stores plus this month's budget limits (the same query the
- * Budgets tab runs), and re-reads the limits whenever transactions change.
+ * existing stores plus this month's budget limits (useBudgetLimits).
  */
 export function useAlerts(): Alert[] {
   const { categories, transactions, goals, totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor } = useFinanceStore();
@@ -22,20 +16,8 @@ export function useAlerts(): Alert[] {
   const syncStatus = useSyncStore((s) => s.status);
   const syncErrorMessage = useSyncStore((s) => s.errorMessage);
   const attachmentUploadError = useSyncStore((s) => s.attachmentUploadError);
-  const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
   const month = currentMonthKey();
-
-  useEffect(() => {
-    let isCurrent = true;
-    (async () => {
-      const budget = await budgetsRepository.getBudgetForMonth(month);
-      const limits = budget ? await budgetsRepository.listBudgetCategories(budget.id) : [];
-      if (isCurrent) setBudgetCategories(limits);
-    })();
-    return () => {
-      isCurrent = false;
-    };
-  }, [month, transactions]);
+  const budgetCategories = useBudgetLimits(month);
 
   return useMemo(
     () =>

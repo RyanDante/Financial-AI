@@ -17,7 +17,8 @@ import { useThemeColors } from '@/constants/theme';
  * source; everything else on the form can change.
  */
 export default function NewTransactionScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // `id` opens the form in edit mode; `categoryId`/`merchant` prefill a new expense (from Home's suggestions).
+  const { id, categoryId: prefillCategoryId, merchant: prefillMerchant } = useLocalSearchParams<{ id?: string; categoryId?: string; merchant?: string }>();
   const isEditing = Boolean(id);
   const colors = useThemeColors();
   const { accounts, categories, addTransaction, updateTransaction } = useFinanceStore();
@@ -25,9 +26,9 @@ export default function NewTransactionScreen() {
   const [existing, setExisting] = useState<Transaction | null>(null);
   const [type, setType] = useState<TransactionType>('expense');
   const [amountInput, setAmountInput] = useState('');
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(prefillCategoryId ?? null);
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [merchant, setMerchant] = useState('');
+  const [merchant, setMerchant] = useState(prefillMerchant ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 

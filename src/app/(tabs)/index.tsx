@@ -3,6 +3,8 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { AmountText, Badge, Body, Card, Caption, EmptyState, Label, ProgressBar, ScreenHeader } from '@/components/ui';
 import { TransactionRow } from '@/components/finance/TransactionRow';
+import { RecommendationCarousel } from '@/components/finance/RecommendationCarousel';
+import { useRecommendations } from '@/features/recommendations/useRecommendations';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { calculateAvailableMoney, calculateGoalProgress } from '@/finance/calculations';
@@ -13,6 +15,7 @@ export default function HomeScreen() {
   const { accounts, categories, transactions, goals, totalBalanceMinor, monthlyIncomeMinor, monthlySpendingMinor, savingsRate, upcomingObligationsMinor, reserveTargetMinor, loadAll } =
     useFinanceStore();
   const currency = useSettingsStore((s) => s.defaultCurrency);
+  const recommendations = useRecommendations();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -57,6 +60,21 @@ export default function HomeScreen() {
           </View>
         </Card>
       </View>
+
+      {recommendations.length > 0 ? (
+        <View className="gap-sm px-lg pt-lg">
+          <Label>Suggestions</Label>
+          <RecommendationCarousel
+            items={recommendations}
+            onAddExpense={(item) =>
+              router.push({
+                pathname: '/transaction/new',
+                params: { ...(item.prefill.categoryId ? { categoryId: item.prefill.categoryId } : {}), ...(item.prefill.merchant ? { merchant: item.prefill.merchant } : {}) },
+              })
+            }
+          />
+        </View>
+      ) : null}
 
       <View className="flex-row gap-md px-lg pt-lg">
         <Card className="flex-1 gap-xs">
