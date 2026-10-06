@@ -95,11 +95,15 @@ in labelled claims, and a number guard checks every figure against the tool resu
 that fails falls back to the offline agents. The key in `.env` is built into the app, so it is
 for testing on your own phone only. See `docs/AI_ARCHITECTURE.md` "Real models".
 
-Known gaps to pick up next: no screens for debts or income sources, goals can't be renamed or
-deleted, bills can't be edited (only stopped), the Overview total counts only the default
-currency's accounts, no app lock/biometrics, no OCR/receipt-data-extraction (the attachment pipeline is OCR-ready — see
-`docs/FIREBASE.md` "Offline file handling"), AI conversation sync isn't wired up (paths are
-reserved — see `docs/FIREBASE.md`), sync/upload retries happen by re-running sync rather than a
-scheduled background job (see `docs/FIREBASE.md` "Background sync"), and the Document/Financial
-Safety agents are unimplemented stubs (see `docs/AI_ARCHITECTURE.md` "Agents not yet
-implemented").
+**Also in place:** mobile-money SMS import (paste MTN MoMo / Orange Money confirmations), debts
+in both directions, income sources with a payday-based daily allowance, goal and bill editing,
+app lock (fingerprint / face / passcode), first-run setup, bill/debt/budget reminders as phone
+notifications, and the F-AI icon and splash.
+
+Known gaps to pick up next: the AI key in `.env` is dev-only (a release needs a server-side
+proxy for model calls); the SMS parser is tuned on illustrative messages and needs real samples;
+reading SMS automatically needs a custom build; the Overview total counts only the default
+currency's accounts; AI conversation sync isn't wired up (paths are reserved, see
+`docs/FIREBASE.md`); sync and uploads retry on the next sync rather than in a background job;
+receipt OCR (Document agent) and the Financial Safety agent are unimplemented stubs (see
+`docs/AI_ARCHITECTURE.md` "Agents not yet implemented").
