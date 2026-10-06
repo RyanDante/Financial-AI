@@ -13,7 +13,7 @@ export const toolRegistry = new ToolRegistry();
 registerFinancialTools(toolRegistry);
 
 const mockProvider = new MockAIProvider();
-const llmClient = createLLMClient(aiConfig);
+const { client: llmClient, problem: clientProblem } = createLLMClient(aiConfig);
 
 /**
  * `cloud` is the configured model (Claude, OpenAI or Gemini) when .env sets
@@ -28,9 +28,9 @@ export const aiRouter = new AIRouter({
 
 /** What's answering, for Settings › About and the AI screen. */
 export const aiStatus = {
-  provider: aiConfig.provider,
+  provider: llmClient ? aiConfig.provider : ('mock' as const),
   model: llmClient?.model ?? null,
-  problem: aiConfig.problem,
+  problem: aiConfig.problem ?? clientProblem,
 };
 
 export interface SendUserMessageResult {
