@@ -54,16 +54,21 @@ describe('defaultOrchestrator — end to end through the real registry', () => {
         currentBalanceMinor: 650000,
         purchaseAmountMinor: 100000,
         projectedBalanceMinor: 550000,
+        upcomingObligationsMinor: 50000,
         reserveTargetMinor: 150000,
+        canCoverObligationsAfterPurchase: true,
         isReserveIntactAfterPurchase: true,
+        shortfallMinor: 0,
         goalImpacts: [],
       },
+      getBudgetStatus: { month: '2026-01', budget: null, categories: [] },
+      calculateCashFlow: { month: '2026-01', currency: 'XAF', incomeMinor: 300000, expenseMinor: 200000, netMinor: 100000 },
     });
 
     const response = await defaultOrchestrator.handle('Can I spend 100,000 XAF on this?', context, tools);
 
     expect(response.message).toContain('550,000 FCFA');
-    expect(response.toolResults.map((t) => t.toolName)).toEqual(['calculatePurchaseImpact']);
+    expect(response.toolResults.map((t) => t.toolName)).toEqual(['calculatePurchaseImpact', 'getBudgetStatus', 'calculateCashFlow']);
   });
 
   it('routes a forecast question to the real Forecast Agent', async () => {
@@ -83,6 +88,17 @@ describe('defaultOrchestrator — end to end through the real registry', () => {
     const response = await defaultOrchestrator.handle('How much am I paying for subscriptions?', context, tools);
 
     expect(response.message).toContain('Streaming');
+  });
+
+  it('routes a transactions question to the real Transaction Agent', async () => {
+    const tools = fakeToolResponses({
+      getTransactions: [{ merchant: 'Corner Shop', description: null, amountMinor: 3200, currency: 'XAF', type: 'expense', occurredAt: '2026-01-10T00:00:00.000Z' }],
+    });
+
+    const response = await defaultOrchestrator.handle('Analyze this transaction.', context, tools);
+
+    expect(response.message).toContain('Corner Shop');
+    expect(response.toolResults.map((t) => t.toolName)).toEqual(['getTransactions']);
   });
 
   it('never lets a real agent call a tool outside its own allowlist, even against the live registry', async () => {

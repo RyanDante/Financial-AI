@@ -248,9 +248,10 @@ export function registerFinancialTools(registry: ToolRegistry): void {
 
   registry.register({
     name: 'forecastBalance',
-    description: 'Projects balance forward N months assuming last month\'s net cash flow continues (an ASSUMPTION-tier projection).',
-    inputSchema: { months: 'number', currency: 'string?' },
-    execute: async (input: { months: number; currency?: CurrencyCode }) => {
+    description:
+      'Projects balance forward N months assuming last month\'s net cash flow continues, optionally adjusted by a hypothetical monthly delta ("what if I saved/spent X more per month") — still an ASSUMPTION-tier projection.',
+    inputSchema: { months: 'number', currency: 'string?', monthlyAdjustmentMinor: 'number? (added to the observed net cash flow before projecting, e.g. +X for an increased-saving scenario, -X for increased spending)' },
+    execute: async (input: { months: number; currency?: CurrencyCode; monthlyAdjustmentMinor?: number }) => {
       const currency = input.currency ?? DEFAULT_CURRENCY;
       const [currentBalanceMinor, transactions] = await Promise.all([
         getTotalBalanceMinor(currency),
@@ -258,7 +259,8 @@ export function registerFinancialTools(registry: ToolRegistry): void {
       ]);
       const lastMonth = currentMonthKey();
       const cashFlow = calculateCashFlow(transactions.filter((tx) => tx.currency === currency), lastMonth);
-      return calculateForecast({ currentBalanceMinor, netMonthlyCashflowMinor: cashFlow.netMinor, months: input.months });
+      const netMonthlyCashflowMinor = cashFlow.netMinor + (input.monthlyAdjustmentMinor ?? 0);
+      return calculateForecast({ currentBalanceMinor, netMonthlyCashflowMinor, months: input.months });
     },
   });
 }

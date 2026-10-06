@@ -1,6 +1,7 @@
 import { View } from 'react-native';
-import { Body, Caption } from '@/components/ui';
+import { Badge, Body, Caption } from '@/components/ui';
 import { cn } from '@/utils/cn';
+import { extractAgentName, visibleToolCalls } from '@/types/ai';
 import type { AIMessage } from '@/types/ai';
 
 interface ChatBubbleProps {
@@ -14,21 +15,27 @@ interface ChatBubbleProps {
  * specialist agent builds its reply with) get each line tagged visually,
  * so the claim-kind distinction the product spec requires is visible,
  * not just present in the text.
+ *
+ * A subtle badge names which specialist handled the message (see
+ * docs/AI_ARCHITECTURE.md "UI routing visibility") — just the agent's
+ * display name and the tools it actually checked, never the regex/intent
+ * logic, a raw tool schema, or anything resembling internal reasoning.
  */
 export function ChatBubble({ message }: ChatBubbleProps) {
   const isUser = message.role === 'user';
   const lines = message.content.split('\n');
+  const agentName = extractAgentName(message.toolCalls);
+  const checkedTools = visibleToolCalls(message.toolCalls);
 
   return (
     <View className={cn('mb-sm flex-row', isUser ? 'justify-end' : 'justify-start')}>
       <View className={cn('max-w-[85%] gap-xs rounded-lg px-lg py-md', isUser ? 'bg-accent' : 'border border-border bg-surface')}>
+        {agentName ? <Badge label={agentName} tone="accent" className="mb-xs" /> : null}
         {lines.map((line, index) => (
           <ChatLine key={index} line={line} isUser={isUser} />
         ))}
-        {message.toolCalls && message.toolCalls.length > 0 ? (
-          <Caption className={isUser ? 'text-text-primary/70' : undefined}>
-            Checked: {message.toolCalls.map((tc) => tc.toolName).join(', ')}
-          </Caption>
+        {checkedTools.length > 0 ? (
+          <Caption className={isUser ? 'text-text-primary/70' : undefined}>Checked: {checkedTools.map((tc) => tc.toolName).join(', ')}</Caption>
         ) : null}
       </View>
     </View>

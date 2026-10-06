@@ -37,8 +37,9 @@ export class Orchestrator {
       // An agent has no way to read back the calls it made through the
       // scoped wrapper (it only ever sees `execute`), so the Orchestrator
       // — which does hold the wrapper — is what actually populates
-      // toolResults on the final response.
-      return { ...response, toolResults: scopedTools.getCalls() };
+      // toolResults on the final response. Same for agentName: an agent
+      // doesn't tag its own responses with its name.
+      return { ...response, toolResults: scopedTools.getCalls(), agentName: agent.name };
     } catch (error) {
       return this.agentFailureResponse(agent.name, error);
     }
@@ -65,9 +66,12 @@ export class Orchestrator {
 
   private agentFailureResponse(agentName: string, error: unknown): AgentResponse {
     const message = error instanceof Error ? error.message : String(error);
-    return buildAgentResponse({
-      claims: [{ kind: 'ai_interpretation', text: `${agentName} couldn't complete that — ${message}` }],
-      warnings: [`${agentName} failed: ${message}`],
-    });
+    return {
+      ...buildAgentResponse({
+        claims: [{ kind: 'ai_interpretation', text: `${agentName} couldn't complete that — ${message}` }],
+        warnings: [`${agentName} failed: ${message}`],
+      }),
+      agentName,
+    };
   }
 }

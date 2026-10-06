@@ -21,6 +21,30 @@ describe('classifyIntent', () => {
     ['Analyze this transaction.', 'transactions'],
     ['How am I doing financially?', 'general_finance'],
     ['asdkjasjkdasd', 'unknown'],
+    // Purchase Agent phrasings (Intelligence Expansion phase)
+    ['Can I afford this phone?', 'purchase'],
+    ['I want to buy something for 250k.', 'purchase'],
+    ['What happens if I spend 50,000?', 'purchase'],
+    ['Would this affect my laptop goal?', 'purchase'],
+    ['What happens to my finances if I buy this?', 'purchase'],
+    ['The PS5 costs 400k. Analyze it.', 'purchase'],
+    // Forecast Agent phrasings
+    ['What will my finances look like in 6 months?', 'forecast'],
+    ['What happens if I save 50,000 more each month?', 'forecast'],
+    ['What happens if my spending stays the same?', 'forecast'],
+    ['How much will I have by March?', 'forecast'],
+    ['Project my current cash flow.', 'forecast'],
+    // Subscription Agent phrasings
+    ['What subscriptions am I paying for?', 'subscriptions'],
+    ['How much do subscriptions cost me?', 'subscriptions'],
+    ['What recurring expenses do I have?', 'subscriptions'],
+    ['How much am I spending every month on subscriptions?', 'subscriptions'],
+    ['Which subscriptions cost the most?', 'subscriptions'],
+    // Transaction Agent phrasings
+    ['Explain this transaction.', 'transactions'],
+    ['What did I spend this money on?', 'transactions'],
+    ['Show me transactions from last week.', 'transactions'],
+    ['Find my largest transactions.', 'transactions'],
   ] as const)('classifies "%s" as %s', (text, expected) => {
     expect(classifyIntent(text)).toBe(expected);
   });
@@ -37,6 +61,14 @@ describe('classifyIntent', () => {
     // Budget check must win because it runs first in the chain, not because
     // "spending" fails to match "overspending" (it wouldn't, as a bare substring).
     expect(classifyIntent('I think I am overspending this month')).toBe('budget');
+  });
+
+  it('still prioritizes the recurring "save more" goal phrasing over forecast when no amount is present', () => {
+    expect(classifyIntent('What happens if I save more?')).toBe('goal');
+  });
+
+  it('does not let a generic spending question get pulled into transactions', () => {
+    expect(classifyIntent('How much did I spend on food?')).toBe('spending');
   });
 });
 

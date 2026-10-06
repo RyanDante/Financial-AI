@@ -1,42 +1,101 @@
-import { formatMoney } from '@/utils/currency';
-import { buildAgentResponse, type AgentDefinition } from './types';
+import { formatMoney, majorToMinor } from '@/utils/currency';
+import type { CurrencyCode } from '@/constants/currencies';
+import { monthsUntilNamedMonth } from './dateEntities';
+import { buildAgentResponse, type AgentClaim, type AgentDefinition } from './types';
 
-export const FORECAST_AGENT_TOOLS = ['forecastBalance'];
+export const FORECAST_AGENT_TOOLS = ['forecastBalance', 'calculateCashFlow'];
 
 interface ForecastResult {
   points: { month: string; projectedBalanceMinor: number }[];
   basis: string;
 }
 
+interface CashFlowResult {
+  month: string;
+  currency: string;
+  incomeMinor: number;
+  expenseMinor: number;
+  netMinor: number;
+}
+
+type ForecastScenario = 'BASELINE' | 'INCREASED_SAVING' | 'INCREASED_SPENDING';
+
 /**
- * Read-only. Projects balance N months out via forecastBalance (which
- * itself assumes last month's net cash flow continues — an
- * ASSUMPTION-tier figure, never stated as fact). Defaults to 6 months
- * when no explicit count was extracted. Ported from the pre-agent
- * MockAIProvider forecast branch.
+ * Detects a hypothetical "what if I saved/spent X more a month" scenario
+ * from the text. This never duplicates forecast math itself — it only
+ * decides the sign and size of a monthly adjustment, which the
+ * forecastBalance tool (see src/ai/tools/financialTools.ts) adds to the
+ * observed net cash flow before calling the financial engine's
+ * calculateForecast. "Baseline" (e.g. "what happens if my spending stays
+ * the same?") is the existing no-adjustment projection.
+ */
+function detectScenario(text: string, amountMajor: number | undefined, currency: CurrencyCode): { scenario: ForecastScenario; monthlyAdjustmentMinor: number } {
+  const lower = text.toLowerCase();
+  if (amountMajor !== undefined && /\bsave\b.*\bmore\b/.test(lower)) {
+    return { scenario: 'INCREASED_SAVING', monthlyAdjustmentMinor: majorToMinor(amountMajor, currency) };
+  }
+  if (amountMajor !== undefined && /\bspend\b.*\bmore\b/.test(lower)) {
+    return { scenario: 'INCREASED_SPENDING', monthlyAdjustmentMinor: -majorToMinor(amountMajor, currency) };
+  }
+  return { scenario: 'BASELINE', monthlyAdjustmentMinor: 0 };
+}
+
+function scenarioPhrase(scenario: ForecastScenario, monthlyAdjustmentMinor: number, currency: CurrencyCode): string {
+  if (scenario === 'INCREASED_SAVING') return `you saved an extra ${formatMoney(monthlyAdjustmentMinor, currency)}/month`;
+  if (scenario === 'INCREASED_SPENDING') return `you spent an extra ${formatMoney(-monthlyAdjustmentMinor, currency)}/month`;
+  return 'your recent cash flow continues unchanged';
+}
+
+/**
+ * Read-only. Projects balance forward via forecastBalance — an
+ * ASSUMPTION-tier figure, never stated as fact — or, for "project my
+ * current cash flow", reports this month's actual income/expense/net via
+ * calculateCashFlow instead (a FACT, not a projection; see CURRENT FACTS
+ * vs PROJECTED OUTCOMES in docs/AI_ARCHITECTURE.md). Defaults to a
+ * 6-month horizon when neither an explicit month count nor a named month
+ * ("by March") was found in the text.
  */
 export const forecastAgent: AgentDefinition = {
   id: 'forecast',
   name: 'Forecast Agent',
-  description: "Projects the user's balance forward N months, labeled as a projection, not a fact.",
+  description: "Projects the user's balance or cash flow forward, clearly labeled as a projection/assumption, never a guarantee.",
   supportedIntents: ['forecast'],
   allowedTools: FORECAST_AGENT_TOOLS,
 
   async execute(request, context, tools) {
-    const months = (request.entities.monthsCount as number | undefined) ?? 6;
+    if (/cash\s*flow/i.test(request.text)) {
+      const cashFlow = (await tools.execute('calculateCashFlow', { currency: context.currency })) as CashFlowResult;
+      return buildAgentResponse({
+        claims: [
+          {
+            kind: 'fact',
+            text: `In ${cashFlow.month}, you've taken in ${formatMoney(cashFlow.incomeMinor, context.currency)} and spent ${formatMoney(cashFlow.expenseMinor, context.currency)}.`,
+          },
+          { kind: 'calculation', text: `That's a net cash flow of ${formatMoney(cashFlow.netMinor, context.currency)} for ${cashFlow.month}.` },
+        ],
+        metadata: { month: cashFlow.month, netMinor: cashFlow.netMinor },
+      });
+    }
 
-    const result = (await tools.execute('forecastBalance', { months, currency: context.currency })) as ForecastResult;
+    const months = Math.max(1, (request.entities.monthsCount as number | undefined) ?? monthsUntilNamedMonth(request.text) ?? 6);
+    const amountMajor = request.entities.amountMajor as number | undefined;
+    const { scenario, monthlyAdjustmentMinor } = detectScenario(request.text, amountMajor, context.currency);
+
+    const result = (await tools.execute('forecastBalance', {
+      months,
+      currency: context.currency,
+      ...(monthlyAdjustmentMinor !== 0 ? { monthlyAdjustmentMinor } : {}),
+    })) as ForecastResult;
     const last = result.points[result.points.length - 1];
 
-    return buildAgentResponse({
-      claims: [
-        {
-          kind: 'projection',
-          text: `If your recent cash flow continues, your balance in ${months} month(s) (${last.month}) would be approximately ${formatMoney(last.projectedBalanceMinor, context.currency)}.`,
-        },
-        { kind: 'assumption', text: result.basis },
-      ],
-      metadata: { months },
-    });
+    const claims: AgentClaim[] = [
+      {
+        kind: 'projection',
+        text: `If ${scenarioPhrase(scenario, monthlyAdjustmentMinor, context.currency)}, your balance in ${months} month(s) (${last.month}) would be approximately ${formatMoney(last.projectedBalanceMinor, context.currency)}.`,
+      },
+      { kind: 'assumption', text: result.basis },
+    ];
+
+    return buildAgentResponse({ claims, metadata: { months, scenario } });
   },
 };

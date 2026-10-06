@@ -1,4 +1,4 @@
-import { currentMonthKey, extractNamedMonthKey, mentionsComparison, previousMonthKey } from './dateEntities';
+import { currentMonthKey, extractNamedMonthKey, lastWeekRange, mentionsComparison, monthsUntilNamedMonth, previousMonthKey } from './dateEntities';
 
 describe('currentMonthKey / previousMonthKey', () => {
   it('formats as YYYY-MM', () => {
@@ -30,5 +30,28 @@ describe('mentionsComparison', () => {
 
   it('is false for a plain spending question', () => {
     expect(mentionsComparison('how much did I spend this month?')).toBe(false);
+  });
+});
+
+describe('monthsUntilNamedMonth', () => {
+  it('counts forward from the current month', () => {
+    expect(monthsUntilNamedMonth('how much will I have by March?', new Date('2026-01-15T00:00:00.000Z'))).toBe(2);
+  });
+
+  it('wraps to next year when the named month has already passed', () => {
+    expect(monthsUntilNamedMonth('how much will I have by January?', new Date('2026-06-01T00:00:00.000Z'))).toBe(7);
+  });
+
+  it('returns null when no month is named', () => {
+    expect(monthsUntilNamedMonth('how much will I have in six months?')).toBeNull();
+  });
+});
+
+describe('lastWeekRange', () => {
+  it('spans the 7 days up to and including now', () => {
+    const now = new Date('2026-03-15T00:00:00.000Z');
+    const range = lastWeekRange(now);
+    expect(range.to).toBe(now.toISOString());
+    expect(range.from).toBe(new Date('2026-03-08T00:00:00.000Z').toISOString());
   });
 });

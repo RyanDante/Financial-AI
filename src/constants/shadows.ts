@@ -34,7 +34,7 @@ const SPECS: Record<ShadowName, ShadowSpec> = {
   card: { color: 'text-primary', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 16, elevation: 4 },
   // The neo-brutalist signature: zero blur, full-strength offset.
   brutal: { color: 'shadow-hard', shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 },
-  brutal-lg: { color: 'shadow-hard-soft', shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.9, shadowRadius: 0, elevation: 8 },
+  'brutal-lg': { color: 'shadow-hard-soft', shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.9, shadowRadius: 0, elevation: 8 },
   // Glass surfaces: tab bar, sheets, floating headers.
   floating: { color: 'text-primary', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.3, shadowRadius: 28, elevation: 12 },
   dramatic: { color: 'text-primary', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.4, shadowRadius: 48, elevation: 20 },

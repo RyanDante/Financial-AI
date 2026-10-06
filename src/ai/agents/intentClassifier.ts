@@ -65,14 +65,28 @@ export function classifyIntent(text: string): AgentIntent {
   const t = text.toLowerCase();
   const hasAmount = extractAmountMajor(t) !== null;
 
-  if (/\b(afford|purchase)\b/.test(t) || (/\b(buy|spend)\b/.test(t) && hasAmount)) {
+  // "buy"/"afford"/"purchase" are purchase intent regardless of whether an
+  // amount was found (e.g. "What happens to my finances if I buy this?" has
+  // no number at all) — only "spend"/"costs" need an amount alongside them,
+  // since those words alone are too generic (see the spending branch below).
+  // "affect ... goal" is a one-off pattern for "Would this affect my laptop
+  // goal?" — a purchase-impact-on-goal question, which is exactly what the
+  // Purchase Agent (not the Goal Agent) answers.
+  if (
+    /\b(afford|purchase|buy)\b/.test(t) ||
+    /\baffect\b.*\bgoal\b/.test(t) ||
+    (/\b(spend|costs?)\b/.test(t) && hasAmount)
+  ) {
     return 'purchase';
   }
   if (
     /\bforecast\b/.test(t) ||
-    /what will my balance/.test(t) ||
-    /balance.*look like/.test(t) ||
-    /\d+\s*months?\s*from now/.test(t)
+    /(balance|finances?).*look like/.test(t) ||
+    /\d+\s*months?\s*from now/.test(t) ||
+    /what happens if .*\bmonth/.test(t) ||
+    /spending stays the same/.test(t) ||
+    /how much will i have/.test(t) ||
+    /project.*cash\s*flow/.test(t)
   ) {
     return 'forecast';
   }
@@ -82,14 +96,17 @@ export function classifyIntent(text: string): AgentIntent {
   if (/\bgoal\b|saving for|save for|reach my goal|when will i reach|need to save|save more/.test(t)) {
     return 'goal';
   }
-  if (/\bsubscription/.test(t)) {
+  if (/\bsubscription|recurring expense/.test(t)) {
     return 'subscriptions';
+  }
+  // Checked before the generic spending branch so "What did I spend this
+  // money on?" (asking to see the transactions themselves) doesn't get
+  // swallowed by the bare \bspend\b match below.
+  if (/\btransactions?\b|analyze this|what did i spend.*\bon\b/.test(t)) {
+    return 'transactions';
   }
   if (/\bspend\b|\bspending\b|\bspent\b|where.*money/.test(t)) {
     return 'spending';
-  }
-  if (/\btransaction\b|analyze this/.test(t)) {
-    return 'transactions';
   }
   if (/\boverview\b|how am i doing financially|financial (summary|health|snapshot)/.test(t)) {
     return 'general_finance';

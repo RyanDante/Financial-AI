@@ -1,6 +1,6 @@
 # F-AI — Financial AI Copilot
 
-An offline-first personal finance app with an AI layer that explains — but never performs — financial calculations. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design, [`docs/FIREBASE.md`](docs/FIREBASE.md) for the cloud backend (auth, sync, storage), and [`docs/AI_ARCHITECTURE.md`](docs/AI_ARCHITECTURE.md) for what the upcoming specialist AI agents will build on.
+An offline-first personal finance app with an AI layer that explains — but never performs — financial calculations. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design, [`docs/FIREBASE.md`](docs/FIREBASE.md) for the cloud backend (auth, sync, storage), and [`docs/AI_ARCHITECTURE.md`](docs/AI_ARCHITECTURE.md) for the specialist AI agents (Orchestrator, Spending, Budget, Goal, and more) built on top of the tool catalog.
 
 ## Stack
 
@@ -38,6 +38,7 @@ src/
   database/       SQLite client, migrations, repositories (local source of truth)
   finance/        the deterministic financial engine + cross-repo aggregates
   ai/             tool registry, provider abstraction, router, orchestration
+  ai/agents/      Orchestrator, agent contract/registry, specialist agents (spending, budget, goal, ...)
   features/auth/  Firebase Auth wrapper, user profile, auth store
   services/
     firebase/     Firebase app/auth/firestore/storage singletons + env config
@@ -61,18 +62,24 @@ latest-updatedAt-wins conflicts), Firebase Storage for file attachments, and sec
 that scope every document/file to its owning user. SQLite is still the only source of truth
 the app reads from moment-to-moment; see `docs/FIREBASE.md` for the full picture.
 
-**Foundation phase 3 (this phase):** a receipt/document picker wired into a new transaction
-detail screen (camera, photo library, or any document — reusing the upload pipeline from phase
-2 end to end, including automatic retry of failed uploads), six new financial-engine-backed AI
-tools the upcoming agents will call, and `docs/AI_ARCHITECTURE.md` documenting the contracts
-those agents will build against.
+**Foundation phase 3:** a receipt/document picker wired into a new transaction detail screen
+(camera, photo library, or any document — reusing the upload pipeline from phase 2 end to end,
+including automatic retry of failed uploads), six new financial-engine-backed AI tools, and
+`docs/AI_ARCHITECTURE.md` documenting the contracts the agent phase would build against.
 
-The actual specialist AI agents (Spending Agent, Forecast Agent, etc.) are the next phase —
-see `docs/AI_ARCHITECTURE.md` for exactly what they'll plug into.
+**Foundation phase 4 (this phase):** the specialist AI agents — an Orchestrator that classifies
+intent and routes to one of nine registered agents (`src/ai/agents/`), with Spending, Budget,
+and Goal fully built and tested, Purchase/Forecast/Subscriptions/Transactions carrying forward
+behavior that existed before this phase, and Document/Financial Safety registered as
+unreachable stubs for a later phase. Every agent is restricted to an explicit tool allowlist
+enforced at the type/runtime level, not just by convention — see `docs/AI_ARCHITECTURE.md`
+"Tool access control". Also added: a light/dark theme toggle in Settings (`src/features/theme/`),
+backed by CSS-variable theming so existing classNames didn't need to change.
 
 Known gaps to pick up next: budget category limits aren't editable from the UI yet, no app
 lock/biometrics, no OCR/receipt-data-extraction (the attachment pipeline is OCR-ready — see
 `docs/FIREBASE.md` "Offline file handling"), AI conversation sync isn't wired up (paths are
-reserved — see `docs/FIREBASE.md`), and sync/upload retries happen by re-running sync rather
-than a scheduled background job (see `docs/FIREBASE.md` "Background sync" for the recommended
-future approach).
+reserved — see `docs/FIREBASE.md`), sync/upload retries happen by re-running sync rather than a
+scheduled background job (see `docs/FIREBASE.md` "Background sync"), and the Document/Financial
+Safety agents are unimplemented stubs (see `docs/AI_ARCHITECTURE.md` "Agents not yet
+implemented").

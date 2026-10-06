@@ -51,6 +51,16 @@ export interface AgentResponse {
   toolResults: ToolCallRecord[];
   followUpSuggestions: string[];
   metadata?: Record<string, unknown>;
+  /**
+   * Which agent produced this response — set by the Orchestrator after
+   * `execute` returns (an agent has no reason to know its own display
+   * name is being attached), never by `buildAgentResponse` itself.
+   * Absent for the Orchestrator's own fallback responses (unknown
+   * intent, no agent registered) since no agent ran. Powers the subtle
+   * "Spending Agent" badge in ChatBubble — see `src/types/ai.ts`
+   * `makeAgentRoutingRecord`.
+   */
+  agentName?: string;
 }
 
 /**

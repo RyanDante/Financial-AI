@@ -30,6 +30,7 @@ describe('Orchestrator routing', () => {
     ['What will my balance look like in six months?', 'forecast'],
     ['Can I afford this?', 'purchase'],
     ['How much am I paying for subscriptions?', 'subscriptions'],
+    ['Find my largest transactions.', 'transactions'],
   ])('routes "%s" to the agent registered for intent "%s"', async (text, intent) => {
     const registry = new AgentRegistry();
     registry.register(fakeAgent(intent));
@@ -38,6 +39,7 @@ describe('Orchestrator routing', () => {
     const response = await orchestrator.handle(text, context, noopTools());
 
     expect(response.message).toContain(`handled ${intent}`);
+    expect(response.agentName).toBe(`Fake ${intent} agent`);
   });
 
   it('never calls a tool itself — only ever delegates to the matched agent', async () => {
@@ -107,6 +109,7 @@ describe('Orchestrator routing', () => {
 
     expect(executeSpy).not.toHaveBeenCalled();
     expect(response.message.toLowerCase()).toContain("not sure what you're asking".toLowerCase());
+    expect(response.agentName).toBeUndefined();
   });
 
   it('handles a genuinely ambiguous request the same graceful way as unknown', async () => {
@@ -137,6 +140,7 @@ describe('Orchestrator routing', () => {
 
     expect(response.warnings[0]).toContain('goal repository exploded');
     expect(response.message).not.toContain('undefined');
+    expect(response.agentName).toBe('Fake goal agent'); // still named, so the UI can show which specialist failed
   });
 
   it('propagates a tool-access violation as a graceful failure rather than a crash', async () => {
