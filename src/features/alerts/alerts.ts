@@ -3,13 +3,15 @@ import { calculateAvailableMoney, calculateBudgetRemaining, calculateGoalProgres
 import { formatMoney } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { SyncStatus } from '@/services/sync/sync.types';
-import type { BudgetCategory, Category, Goal, Transaction } from '@/types/finance';
+import type { BudgetCategory, Category, Debt, Goal, Transaction } from '@/types/finance';
+import { nextDebtDueDate } from '@/features/allowance/allowance';
+import { calendarDaysUntil } from '@/utils/months';
 import { formatDue, type BillItem } from '@/features/bills/bills';
 
 export type AlertSeverity = 'danger' | 'warning';
 
 /** Where tapping an alert takes the user. Only routes that already exist. */
-export type AlertHref = '/' | '/budgets' | '/goals' | '/settings' | '/bills';
+export type AlertHref = '/' | '/budgets' | '/goals' | '/settings' | '/bills' | '/debts';
 
 export interface Alert {
   id: string;
@@ -38,6 +40,8 @@ export interface AlertInput {
   attachmentUploadError: string | null;
   /** From toBillItems; defaults to none. */
   bills?: BillItem[];
+  /** Open debts; ones with a monthly due day within BILL_ALERT_DAYS raise an alert. */
+  debts?: Debt[];
   asOf?: Date;
 }
 
@@ -114,6 +118,22 @@ export function buildAlerts(input: AlertInput): Alert[] {
       detail: `${formatMoney(bill.amountMinor, bill.currency)} to pay.`,
       href: '/bills',
     });
+  }
+
+  for (const debt of input.debts ?? []) {
+    if (debt.remainingMinor <= 0) continue;
+    const due = nextDebtDueDate(debt, asOf);
+    if (!due) continue;
+    const inDays = calendarDaysUntil(due, asOf);
+    if (inDays > BILL_ALERT_DAYS) continue;
+    const when = inDays === 0 ? 'today' : inDays === 1 ? 'tomorrow' : `in ${inDays} days`;
+    const who = debt.counterparty ?? debt.name;
+    const amount = formatMoney(debt.minimumPaymentMinor > 0 ? Math.min(debt.minimumPaymentMinor, debt.remainingMinor) : debt.remainingMinor, debt.currency);
+    alerts.push(
+      debt.direction === 'i_owe'
+        ? { id: `debt-${debt.id}`, severity: 'warning', icon: 'cash-outline', title: `Payment to ${who} due ${when}`, detail: `${amount} to pay.`, href: '/debts' }
+        : { id: `debt-${debt.id}`, severity: 'warning', icon: 'cash-outline', title: `${who} is due to pay you back ${when}`, detail: `${amount} expected.`, href: '/debts' },
+    );
   }
 
   if (input.syncStatus === 'error') {

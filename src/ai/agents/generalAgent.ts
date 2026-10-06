@@ -14,6 +14,8 @@ export const GENERAL_AGENT_TOOLS = [
   'getUpcomingObligations',
   'getAlerts',
   'getRecommendations',
+  'getDebts',
+  'getIncomeAndAllowance',
 ];
 
 interface BalanceResult {
@@ -34,7 +36,7 @@ interface CashFlowResult {
 export const generalAgent: AgentDefinition = {
   id: 'general',
   name: 'Finance Overview Agent',
-  description: "Answers broad questions about the user's overall financial picture: balances, this month's cash flow, budgets, goals, bills and anything that needs attention.",
+  description: "Answers broad questions about the user's overall financial picture: balances, this month's cash flow, budgets, goals, bills, debts, payday and daily allowance, and anything that needs attention.",
   supportedIntents: ['general_finance'],
   allowedTools: GENERAL_AGENT_TOOLS,
 

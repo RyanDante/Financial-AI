@@ -69,12 +69,17 @@ export default function RootLayout() {
             <Stack.Screen name="alerts" options={{ title: 'Alerts' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />
             <Stack.Screen name="bills/index" options={{ title: 'Bills & subscriptions' }} />
+            <Stack.Screen name="debts/index" options={{ title: 'Debts' }} />
+            <Stack.Screen name="income/index" options={{ title: 'Income & payday' }} />
             <Stack.Screen name="transaction/new" options={modalOptions('Add transaction')} />
             <Stack.Screen name="goal/new" options={modalOptions('New goal')} />
             <Stack.Screen name="budget/limit" options={modalOptions('Budget limit')} />
             <Stack.Screen name="account/edit" options={modalOptions('Account')} />
             <Stack.Screen name="bills/new" options={modalOptions('Add a bill')} />
             <Stack.Screen name="import/sms" options={modalOptions('Import from SMS')} />
+            <Stack.Screen name="debts/new" options={modalOptions('Add a debt')} />
+            <Stack.Screen name="debts/pay" options={modalOptions('Record a payment')} />
+            <Stack.Screen name="income/new" options={modalOptions('Add income')} />
           </Stack>
         </View>
       </SafeAreaProvider>

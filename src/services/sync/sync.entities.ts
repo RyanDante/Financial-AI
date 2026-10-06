@@ -81,7 +81,7 @@ export const SYNC_ENTITIES: SyncEntityConfig[] = [
   {
     tableName: 'debts',
     collectionName: 'debts',
-    columns: ['name', 'principal_minor', 'remaining_minor', 'currency', 'interest_rate', 'minimum_payment_minor', 'due_day_of_month'],
+    columns: ['name', 'direction', 'counterparty', 'principal_minor', 'remaining_minor', 'currency', 'interest_rate', 'minimum_payment_minor', 'due_day_of_month'],
     timestampColumn: 'updated_at',
     supportsSoftDelete: true,
   },

@@ -9,6 +9,10 @@ import { SpendingInsights } from '@/components/finance/SpendingInsights';
 import { useRecommendations } from '@/features/recommendations/useRecommendations';
 import { useBills } from '@/features/bills/useBills';
 import { formatDue, toBillItems } from '@/features/bills/bills';
+import { useDebts, debtTotals } from '@/features/debts/useDebts';
+import { useIncome } from '@/features/income/useIncome';
+import { dailyAllowance } from '@/features/allowance/allowance';
+import { formatMoney } from '@/utils/currency';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { calculateAvailableMoney, calculateGoalProgress } from '@/finance/calculations';
@@ -23,6 +27,9 @@ export default function HomeScreen() {
   const { subscriptions, recurringExpenses } = useBills();
   const bills = toBillItems(subscriptions, recurringExpenses);
   const nextBill = bills[0];
+  const debts = useDebts();
+  const { iOweMinor, owedToMeMinor } = debtTotals(debts, currency);
+  const incomeSources = useIncome();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -36,6 +43,7 @@ export default function HomeScreen() {
     upcomingObligationsMinor,
     reserveTargetMinor,
   });
+  const allowance = dailyAllowance(availableMoneyMinor, incomeSources);
 
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const activeGoals = goals.filter((g) => g.status === 'active').slice(0, 2);
@@ -55,6 +63,15 @@ export default function HomeScreen() {
         <Card variant="raised" className="gap-sm">
           <Label>Available to spend safely</Label>
           <AmountText valueMinor={availableMoneyMinor} currency={currency} size="lg" tone={availableMoneyMinor < 0 ? 'danger' : 'primary'} />
+          {allowance ? (
+            <Caption className="text-text-secondary">
+              About {formatMoney(allowance.perDayMinor, currency)} a day until payday ({allowance.payday.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })})
+            </Caption>
+          ) : (
+            <Pressable onPress={() => router.push('/income/new')} accessibilityRole="button" hitSlop={8}>
+              <Caption className="font-sans-semibold text-accent-secondary">Add your payday to see a daily allowance</Caption>
+            </Pressable>
+          )}
           <View className="mt-sm flex-row gap-lg">
             <View className="flex-1">
               <Caption>Total balance</Caption>
@@ -93,6 +110,23 @@ export default function HomeScreen() {
           <AmountText valueMinor={monthlySpendingMinor} currency={currency} size="sm" tone="danger" />
         </Card>
       </View>
+
+      {debts.length > 0 ? (
+        <View className="px-lg pt-lg">
+          <Pressable onPress={() => router.push('/debts')} accessibilityRole="button" accessibilityLabel={`Debts: you owe ${formatMoney(iOweMinor, currency)}, owed to you ${formatMoney(owedToMeMinor, currency)}`}>
+            <Card className="flex-row items-center gap-md">
+              <View className="flex-1 gap-xs">
+                <Label>Debts</Label>
+                <Caption>
+                  You owe <AmountText valueMinor={iOweMinor} currency={currency} size="xs" /> · Owed to you{' '}
+                  <AmountText valueMinor={owedToMeMinor} currency={currency} size="xs" tone="success" />
+                </Caption>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors['text-muted']} />
+            </Card>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View className="px-lg pt-lg">
         <Pressable onPress={() => router.push('/bills')} accessibilityRole="button" accessibilityLabel="Upcoming bills. Open bills and subscriptions">

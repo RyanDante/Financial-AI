@@ -69,3 +69,10 @@ export async function createIncomeSource(input: CreateIncomeInput): Promise<Inco
     isActive: true,
   };
 }
+
+/** "Stop tracking" keeps the row and its sync history, like subscriptions. */
+export async function setIncomeSourceActive(id: string, isActive: boolean): Promise<void> {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+  await db.runAsync('UPDATE income SET is_active = ?, updated_at = ?, version = version + 1 WHERE id = ?', isActive ? 1 : 0, now, id);
+}

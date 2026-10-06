@@ -1,11 +1,13 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../client';
-import type { Debt } from '@/types/finance';
+import type { Debt, DebtDirection } from '@/types/finance';
 import type { CurrencyCode } from '@/constants/currencies';
 
 interface DebtRow {
   id: string;
   name: string;
+  direction: DebtDirection;
+  counterparty: string | null;
   principal_minor: number;
   remaining_minor: number;
   currency: CurrencyCode;
@@ -18,6 +20,8 @@ function mapRow(row: DebtRow): Debt {
   return {
     id: row.id,
     name: row.name,
+    direction: row.direction ?? 'i_owe',
+    counterparty: row.counterparty ?? null,
     principalMinor: row.principal_minor,
     remainingMinor: row.remaining_minor,
     currency: row.currency,
@@ -35,6 +39,8 @@ export async function listDebts(): Promise<Debt[]> {
 
 export interface CreateDebtInput {
   name: string;
+  direction?: DebtDirection;
+  counterparty?: string | null;
   principalMinor: number;
   remainingMinor: number;
   currency: CurrencyCode;
@@ -48,10 +54,12 @@ export async function createDebt(input: CreateDebtInput): Promise<Debt> {
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
   await db.runAsync(
-    `INSERT INTO debts (id, name, principal_minor, remaining_minor, currency, interest_rate, minimum_payment_minor, due_day_of_month, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO debts (id, name, direction, counterparty, principal_minor, remaining_minor, currency, interest_rate, minimum_payment_minor, due_day_of_month, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     input.name,
+    input.direction ?? 'i_owe',
+    input.counterparty ?? null,
     input.principalMinor,
     input.remainingMinor,
     input.currency,
@@ -64,6 +72,8 @@ export async function createDebt(input: CreateDebtInput): Promise<Debt> {
   return {
     id,
     name: input.name,
+    direction: input.direction ?? 'i_owe',
+    counterparty: input.counterparty ?? null,
     principalMinor: input.principalMinor,
     remainingMinor: input.remainingMinor,
     currency: input.currency,
@@ -71,4 +81,28 @@ export async function createDebt(input: CreateDebtInput): Promise<Debt> {
     minimumPaymentMinor: input.minimumPaymentMinor ?? 0,
     dueDayOfMonth: input.dueDayOfMonth ?? null,
   };
+}
+
+/**
+ * Records a repayment (either direction): lowers what's left, never below
+ * zero. Returns the updated debt so callers can tell when it's settled.
+ */
+export async function recordDebtPayment(id: string, amountMinor: number): Promise<Debt | null> {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+  await db.runAsync(
+    'UPDATE debts SET remaining_minor = MAX(0, remaining_minor - ?), updated_at = ?, version = version + 1 WHERE id = ? AND deleted_at IS NULL',
+    amountMinor,
+    now,
+    id,
+  );
+  const row = await db.getFirstAsync<DebtRow>('SELECT * FROM debts WHERE id = ? AND deleted_at IS NULL', id);
+  return row ? mapRow(row) : null;
+}
+
+/** Soft delete, so sync removes it from the cloud too. */
+export async function deleteDebt(id: string): Promise<void> {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+  await db.runAsync('UPDATE debts SET deleted_at = ?, updated_at = ?, version = version + 1 WHERE id = ?', now, now, id);
 }

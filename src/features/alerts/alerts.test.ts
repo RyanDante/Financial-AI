@@ -94,6 +94,24 @@ describe('buildAlerts', () => {
     expect(alerts[0]).toMatchObject({ id: 'bill-recurring-r', severity: 'warning', title: 'Rent: due in 2 days', detail: '120,000 FCFA to pay.', href: '/bills' });
   });
 
+  it('warns about debt payments due within 3 days, in both directions', () => {
+    const asOf = new Date(2026, 8, 20, 12);
+    const base = { currency: 'XAF' as const, interestRate: 0, principalMinor: 100_000 };
+    const alerts = buildAlerts(
+      input({
+        asOf,
+        debts: [
+          { ...base, id: 'loan', name: 'Phone loan', direction: 'i_owe', counterparty: 'Afriland', remainingMinor: 60_000, minimumPaymentMinor: 20_000, dueDayOfMonth: 22 },
+          { ...base, id: 'lent', name: 'Lent to Paul', direction: 'owed_to_me', counterparty: 'Paul', remainingMinor: 15_000, minimumPaymentMinor: 0, dueDayOfMonth: 21 },
+          { ...base, id: 'later', name: 'Later', direction: 'i_owe', counterparty: null, remainingMinor: 5_000, minimumPaymentMinor: 0, dueDayOfMonth: 28 },
+          { ...base, id: 'paid', name: 'Paid off', direction: 'i_owe', counterparty: null, remainingMinor: 0, minimumPaymentMinor: 0, dueDayOfMonth: 21 },
+        ],
+      }),
+    );
+    expect(alerts.map((a) => a.title)).toEqual(['Payment to Afriland due in 2 days', 'Paul is due to pay you back tomorrow']);
+    expect(alerts.map((a) => a.detail)).toEqual(['20,000 FCFA to pay.', '15,000 FCFA expected.']);
+  });
+
   it('ignores offline and syncing states', () => {
     expect(buildAlerts(input({ syncStatus: 'offline' }))).toEqual([]);
     expect(buildAlerts(input({ syncStatus: 'syncing' }))).toEqual([]);

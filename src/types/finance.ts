@@ -111,9 +111,15 @@ export interface IncomeSource {
   isActive: boolean;
 }
 
+/** `i_owe`: money the user owes (a loan, credit). `owed_to_me`: money the user lent someone. */
+export type DebtDirection = 'i_owe' | 'owed_to_me';
+
 export interface Debt {
   id: string;
   name: string;
+  direction: DebtDirection;
+  /** Who the money is owed to or by (a person, a bank); null for older debts. */
+  counterparty: string | null;
   principalMinor: MinorUnits;
   remainingMinor: MinorUnits;
   currency: CurrencyCode;

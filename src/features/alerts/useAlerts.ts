@@ -6,6 +6,7 @@ import { useBudgetLimits } from '@/features/budgets/useBudgetLimits';
 import { currentMonthKey } from '@/utils/months';
 import { useBills } from '@/features/bills/useBills';
 import { toBillItems } from '@/features/bills/bills';
+import { useDebts } from '@/features/debts/useDebts';
 import { buildAlerts, type Alert } from './alerts';
 
 /**
@@ -21,6 +22,7 @@ export function useAlerts(): Alert[] {
   const month = currentMonthKey();
   const budgetCategories = useBudgetLimits(month);
   const { subscriptions, recurringExpenses } = useBills();
+  const debts = useDebts();
 
   return useMemo(
     () =>
@@ -38,7 +40,8 @@ export function useAlerts(): Alert[] {
         syncErrorMessage,
         attachmentUploadError,
         bills: toBillItems(subscriptions, recurringExpenses),
+        debts,
       }),
-    [currency, month, categories, transactions, goals, budgetCategories, totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor, syncStatus, syncErrorMessage, attachmentUploadError, subscriptions, recurringExpenses],
+    [currency, month, categories, transactions, goals, budgetCategories, totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor, syncStatus, syncErrorMessage, attachmentUploadError, subscriptions, recurringExpenses, debts],
   );
 }

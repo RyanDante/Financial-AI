@@ -2,12 +2,15 @@ import {
   accountsRepository,
   budgetsRepository,
   categoriesRepository,
+  debtsRepository,
   goalsRepository,
+  incomeRepository,
   recurringExpensesRepository,
   subscriptionsRepository,
   transactionsRepository,
 } from '@/database/repositories';
 import {
+  calculateAvailableMoney,
   calculateBalance,
   calculateBudgetRemaining,
   calculateCashFlow,
@@ -27,6 +30,7 @@ import { toBillItems } from '@/features/bills/bills';
 import { buildRecommendations } from '@/features/recommendations/recommendations';
 import { buildAlerts } from '@/features/alerts/alerts';
 import { MS_PER_DAY } from '@/utils/months';
+import { dailyAllowance, nextDebtDueDate, nextPayday } from '@/features/allowance/allowance';
 import type { ToolRegistry } from './types';
 
 function currentMonthKey(): string {
@@ -360,6 +364,47 @@ export function registerFinancialTools(registry: ToolRegistry): void {
         attachmentUploadError: null,
         bills: toBillItems(subscriptions, recurringExpenses),
       }).map(({ severity, title, detail }) => ({ severity, title, detail }));
+    },
+  });
+
+  registry.register({
+    name: 'getDebts',
+    description: 'Returns debts in both directions: money the user owes (i_owe) and money owed to them (owed_to_me), with amount left, original amount, monthly payment and next due date.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    execute: async () =>
+      (await debtsRepository.listDebts()).map((debt) => ({
+        name: debt.name,
+        direction: debt.direction,
+        counterparty: debt.counterparty,
+        currency: debt.currency,
+        principalMinor: debt.principalMinor,
+        remainingMinor: debt.remainingMinor,
+        minimumPaymentMinor: debt.minimumPaymentMinor,
+        nextDue: nextDebtDueDate(debt)?.toISOString() ?? null,
+      })),
+  });
+
+  registry.register({
+    name: 'getIncomeAndAllowance',
+    description: "Returns the user's income sources, the next payday, and the daily allowance: safe-to-spend divided by the days until payday.",
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    execute: async () => {
+      const [sources, totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor] = await Promise.all([
+        incomeRepository.listIncomeSources(true),
+        getTotalBalanceMinor(DEFAULT_CURRENCY),
+        getUpcomingObligationsMinor(DEFAULT_CURRENCY),
+        getReserveTargetMinor(DEFAULT_CURRENCY),
+      ]);
+      const availableMinor = calculateAvailableMoney({ totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor });
+      const payday = nextPayday(sources);
+      const allowance = dailyAllowance(availableMinor, sources);
+      return {
+        currency: DEFAULT_CURRENCY,
+        incomeSources: sources.map((s) => ({ source: s.source, amountMinor: s.amountMinor, frequency: s.frequency })),
+        nextPayday: payday ? { source: payday.source, date: payday.date.toISOString(), inDays: payday.inDays } : null,
+        availableToSpendSafelyMinor: availableMinor,
+        dailyAllowanceMinor: allowance?.perDayMinor ?? null,
+      };
     },
   });
 }

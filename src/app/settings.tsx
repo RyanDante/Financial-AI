@@ -231,6 +231,26 @@ export default function SettingsScreen() {
         </Card>
       </Pressable>
 
+      <Pressable onPress={() => router.push('/income')} accessibilityRole="button">
+        <Card className="flex-row items-center justify-between">
+          <View>
+            <Label>Income & payday</Label>
+            <Caption>Salary and other income; sets your daily allowance</Caption>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors['text-muted']} />
+        </Card>
+      </Pressable>
+
+      <Pressable onPress={() => router.push('/debts')} accessibilityRole="button">
+        <Card className="flex-row items-center justify-between">
+          <View>
+            <Label>Debts</Label>
+            <Caption>Loans you repay and money people owe you</Caption>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors['text-muted']} />
+        </Card>
+      </Pressable>
+
       <AppearanceSection />
 
       <Card className="gap-md">
