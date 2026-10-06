@@ -53,14 +53,24 @@ export default function TransactionsScreen() {
       <ScreenHeader
         title="Transactions"
         right={
-          <Pressable
-            onPress={() => router.push('/transaction/new')}
-            accessibilityRole="button"
-            accessibilityLabel="Add transaction"
-            className="h-11 w-11 items-center justify-center rounded-full bg-accent"
-          >
-            <Ionicons name="add" size={22} color={colors['on-accent']} />
-          </Pressable>
+          <View className="flex-row items-center gap-sm">
+            <Pressable
+              onPress={() => router.push('/import/sms')}
+              accessibilityRole="button"
+              accessibilityLabel="Import from mobile money SMS"
+              className="h-11 w-11 items-center justify-center rounded-full border border-border-strong bg-surface"
+            >
+              <Ionicons name="chatbox-ellipses-outline" size={20} color={colors['text-primary']} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/transaction/new')}
+              accessibilityRole="button"
+              accessibilityLabel="Add transaction"
+              className="h-11 w-11 items-center justify-center rounded-full bg-accent"
+            >
+              <Ionicons name="add" size={22} color={colors['on-accent']} />
+            </Pressable>
+          </View>
         }
       />
 

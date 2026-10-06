@@ -74,6 +74,7 @@ export default function RootLayout() {
             <Stack.Screen name="budget/limit" options={modalOptions('Budget limit')} />
             <Stack.Screen name="account/edit" options={modalOptions('Account')} />
             <Stack.Screen name="bills/new" options={modalOptions('Add a bill')} />
+            <Stack.Screen name="import/sms" options={modalOptions('Import from SMS')} />
           </Stack>
         </View>
       </SafeAreaProvider>
