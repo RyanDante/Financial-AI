@@ -35,6 +35,8 @@ const colors = {
   accent: themedColor('accent'),
   'accent-secondary': themedColor('accent-secondary'),
   'accent-muted': themedColor('accent-muted'),
+  // Text and icons on an accent fill (primary button label, user chat bubble).
+  'on-accent': themedColor('on-accent'),
   success: themedColor('success'),
   'success-muted': themedColor('success-muted'),
   warning: themedColor('warning'),

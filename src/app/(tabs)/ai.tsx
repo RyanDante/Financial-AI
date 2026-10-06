@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '@/components/ui';
+import { useThemeColors } from '@/constants/theme';
 import { ChatBubble } from '@/components/ai/ChatBubble';
 import { SuggestedPrompts } from '@/components/ai/SuggestedPrompts';
 import { useAIStore } from '@/store/aiStore';
 
 export default function AIScreen() {
+  const colors = useThemeColors();
   const { messages, isSending, ensureConversation, sendMessage } = useAIStore();
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<ScrollView>(null);
@@ -45,7 +47,7 @@ export default function AIScreen() {
           value={draft}
           onChangeText={setDraft}
           placeholder="Ask about your finances…"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="flex-1 rounded-md border border-border-strong bg-background px-md py-sm text-text-primary"
           onSubmitEditing={() => draft.trim() && handleSend(draft)}
           editable={!isSending}
@@ -56,7 +58,7 @@ export default function AIScreen() {
           className="rounded-full bg-accent p-sm"
           style={{ opacity: isSending || !draft.trim() ? 0.5 : 1 }}
         >
-          <Ionicons name="arrow-up" size={20} color="#F5F5F7" />
+          <Ionicons name="arrow-up" size={20} color={colors['on-accent']} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>

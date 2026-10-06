@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { Body, Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
+import { useThemeColors } from '@/constants/theme';
 
 export default function ForgotPasswordScreen() {
+  const colors = useThemeColors();
   const { resetPassword, error } = useAuthStore();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +36,7 @@ export default function ForgotPasswordScreen() {
           keyboardType="email-address"
           autoComplete="email"
           placeholder="you@example.com"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>

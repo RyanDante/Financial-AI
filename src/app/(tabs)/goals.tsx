@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { EmptyState, ScreenHeader } from '@/components/ui';
 import { GoalCard } from '@/components/finance/GoalCard';
 import { useFinanceStore } from '@/store/financeStore';
+import { useThemeColors } from '@/constants/theme';
 
 export default function GoalsScreen() {
+  const colors = useThemeColors();
   const goals = useFinanceStore((s) => s.goals);
 
   return (
@@ -14,7 +16,7 @@ export default function GoalsScreen() {
         title="Goals"
         right={
           <Pressable onPress={() => router.push('/goal/new')} className="rounded-full bg-accent p-sm">
-            <Ionicons name="add" size={20} color="#F5F5F7" />
+            <Ionicons name="add" size={20} color={colors['on-accent']} />
           </Pressable>
         }
       />

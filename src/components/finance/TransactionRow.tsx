@@ -19,8 +19,8 @@ export function TransactionRow({ transaction, category }: TransactionRowProps) {
     <View className="flex-row items-center gap-md py-sm">
       <IconCircle
         name={(category?.icon as any) ?? 'ellipsis-horizontal'}
-        color={category?.color ?? '#9D9DAB'}
-        backgroundColor={category?.color ? `${category.color}26` : '#2A2A34'}
+        color={category?.color ?? undefined}
+        backgroundColor={category?.color ? `${category.color}26` : undefined}
       />
       <View className="flex-1">
         <Body numberOfLines={1}>{transaction.merchant || transaction.description || category?.name || 'Transaction'}</Body>

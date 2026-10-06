@@ -1,3 +1,4 @@
+import { useColorScheme } from 'nativewind';
 import rawColors from './colors';
 
 export type ColorScheme = 'light' | 'dark';
@@ -18,6 +19,7 @@ export type ColorKey =
   | 'accent'
   | 'accent-secondary'
   | 'accent-muted'
+  | 'on-accent'
   | 'success'
   | 'success-muted'
   | 'warning'
@@ -44,6 +46,16 @@ const palettes = rawColors as Record<ColorScheme, Record<ColorKey, string>>;
  */
 export function getColors(scheme: ColorScheme): Record<ColorKey, string> {
   return palettes[scheme];
+}
+
+/**
+ * The live palette for the active theme. Must be called during render (it
+ * subscribes to nativewind's color scheme) so a theme switch repaints
+ * native-prop colors; never cache the result.
+ */
+export function useThemeColors(): Record<ColorKey, string> {
+  const { colorScheme } = useColorScheme();
+  return getColors(colorScheme === 'light' ? 'light' : 'dark');
 }
 
 export const spacing = {

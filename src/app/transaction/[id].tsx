@@ -11,11 +11,13 @@ import { attachFileToEntity, pickDocument, pickImageFromLibrary, takePhoto } fro
 import { retryUpload } from '@/services/cloud/storage';
 import type { FileUpload } from '@/types/files';
 import type { Transaction } from '@/types/finance';
+import { useThemeColors } from '@/constants/theme';
 
 const OWNER_ENTITY_TYPE = 'transaction';
 
 export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const colors = useThemeColors();
   const { categories, accounts } = useFinanceStore();
   const authUser = useAuthStore((s) => s.user);
 
@@ -71,7 +73,7 @@ export default function TransactionDetailScreen() {
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <Pressable onPress={() => router.back()} className="flex-row items-center gap-xs">
-        <Ionicons name="chevron-back" size={18} color="#9D9DAB" />
+        <Ionicons name="chevron-back" size={18} color={colors['text-secondary']} />
         <Caption>Back</Caption>
       </Pressable>
 
@@ -120,6 +122,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function AttachButton({ icon, label, disabled, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; disabled: boolean; onPress: () => void }) {
+  const colors = useThemeColors();
   return (
     <Pressable
       onPress={onPress}
@@ -127,7 +130,7 @@ function AttachButton({ icon, label, disabled, onPress }: { icon: keyof typeof I
       className="flex-1 items-center gap-xs rounded-md border border-border bg-surface py-md"
       style={{ opacity: disabled ? 0.5 : 1 }}
     >
-      <Ionicons name={icon} size={20} color="#9D9DAB" />
+      <Ionicons name={icon} size={20} color={colors['text-secondary']} />
       <Caption>{label}</Caption>
     </Pressable>
   );

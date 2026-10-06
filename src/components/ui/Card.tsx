@@ -1,4 +1,5 @@
 import { View, type ViewProps } from 'react-native';
+import { useShadow } from '@/constants/shadows';
 import { cn } from '@/utils/cn';
 
 interface CardProps extends ViewProps {
@@ -14,19 +15,14 @@ interface CardProps extends ViewProps {
  * the border weight and shadow stay consistent everywhere.
  */
 export function Card({ className, variant = 'flat', style, ...props }: CardProps) {
+  // The theme's hard slab shadow: a violet extrusion in dark mode (a black
+  // one vanishes on the near-black canvas), ink in light mode (ui.md §7).
+  const raisedShadow = useShadow('brutal-lg');
+
   return (
     <View
       className={cn('rounded-lg border border-border bg-surface', variant === 'flat' ? 'p-lg' : 'p-xl', className)}
-      style={[
-        variant === 'raised' && {
-          shadowColor: '#000',
-          shadowOffset: { width: 4, height: 4 },
-          shadowOpacity: 0.35,
-          shadowRadius: 0,
-          elevation: 6,
-        },
-        style,
-      ]}
+      style={[variant === 'raised' && raisedShadow, style]}
       {...props}
     />
   );

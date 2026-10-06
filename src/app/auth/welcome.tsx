@@ -2,13 +2,15 @@ import { View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Body, Button, Caption, Heading } from '@/components/ui';
+import { useThemeColors } from '@/constants/theme';
 
 export default function WelcomeScreen() {
+  const colors = useThemeColors();
   return (
     <View className="flex-1 justify-between bg-background p-lg">
       <View className="flex-1 items-center justify-center gap-lg">
         <View className="h-20 w-20 items-center justify-center rounded-full bg-accent-muted">
-          <Ionicons name="cloud-upload-outline" size={36} color="#7C5CFC" />
+          <Ionicons name="cloud-upload-outline" size={36} color={colors.accent} />
         </View>
         <Heading className="text-center">Back up & sync your data</Heading>
         <Body className="text-center text-text-secondary">

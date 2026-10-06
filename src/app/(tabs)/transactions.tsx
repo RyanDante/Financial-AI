@@ -6,6 +6,7 @@ import { TransactionRow } from '@/components/finance/TransactionRow';
 import { useFinanceStore } from '@/store/financeStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/utils/cn';
+import { useThemeColors } from '@/constants/theme';
 
 const FILTERS: { key: 'all' | 'income' | 'expense'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -14,6 +15,7 @@ const FILTERS: { key: 'all' | 'income' | 'expense'; label: string }[] = [
 ];
 
 export default function TransactionsScreen() {
+  const colors = useThemeColors();
   const { transactions, categories } = useFinanceStore();
   const { activeTransactionFilter, setTransactionFilter } = useUIStore();
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -26,7 +28,7 @@ export default function TransactionsScreen() {
         title="Transactions"
         right={
           <Pressable onPress={() => router.push('/transaction/new')} className="rounded-full bg-accent p-sm">
-            <Ionicons name="add" size={20} color="#F5F5F7" />
+            <Ionicons name="add" size={20} color={colors['on-accent']} />
           </Pressable>
         }
       />

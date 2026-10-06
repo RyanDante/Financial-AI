@@ -119,7 +119,8 @@ the palette**; they are recorded here as explicitly rejected so nobody adds them
 All colors are CSS variables so a single `colorScheme.set()` from NativeWind repaints the
 entire app. **Never hardcode a hex in a component.** The only sanctioned literal-color escape
 hatch is `getColors(scheme)` from `@/constants/theme`, for props that cannot read a className
-(Ionicons `color`, `tabBarStyle`, shadow `shadowColor`).
+(Ionicons `color`, `tabBarStyle`, shadow `shadowColor`, `placeholderTextColor`). Inside a
+component, call `useThemeColors()`, which reads the live scheme so a theme switch repaints.
 
 ### Semantic roles
 
@@ -140,6 +141,7 @@ hatch is `getColors(scheme)` from `@/constants/theme`, for props that cannot rea
 | `accent` | `text-accent` / `bg-accent` | **Brand primary.** Primary CTA, active tab, brand marks | Semantic state |
 | `accent-secondary` | `text-accent-secondary` | **Data secondary.** Projections, tool activity, second chart series | Fills of primary CTAs |
 | `accent-muted` | `bg-accent-muted` | Selected chip fill, soft accent background | — |
+| `on-accent` | `text-on-accent` | Text and icons on an `accent` fill: primary button label, user chat bubble, accent icon buttons | Text on any other surface |
 | `success` | `text-success` | Income, under budget, goal complete, upload OK | Decoration |
 | `warning` | `text-warning` | Near limit, pending upload, assumption tier | Decoration |
 | `danger` | `text-danger` | Over budget, overspend, negative balance, failure | Decoration |
@@ -161,10 +163,11 @@ hatch is `getColors(scheme)` from `@/constants/theme`, for props that cannot rea
 | `border-heavy` | `#5A5A78` | **Not black.** A black 2px border on a near-black card is invisible; dark-mode neo-brutalism uses a *light* ink. See [§12](#12-dark-mode) |
 | `text-primary` | `#F5F5F7` | |
 | `text-secondary` | `#A0A0B2` | Raised from the old `#9D9DAB` for contrast on `surface` |
-| `text-muted` | `#71718A` | |
+| `text-muted` | `#8585A0` | Raised from `#71718A` (3.8:1) to reach 4.5:1 on `surface` |
 | `accent` | `#7C5CFC` | Electric Violet |
 | `accent-secondary` | `#3DDCFF` | Vibrant Cyan |
 | `accent-muted` | `#241C4A` | |
+| `on-accent` | `#0A0A0F` | Near-black: light text on this violet only reaches 4.0:1; this is 4.5:1 |
 | `success` | `#3FC98B` | |
 | `warning` | `#F5A524` | |
 | `danger` | `#F2545B` | |
@@ -191,10 +194,11 @@ hatch is `getColors(scheme)` from `@/constants/theme`, for props that cannot rea
 | `border-heavy` | `#14141A` | **True ink.** Light mode gets the classic black 2px border |
 | `text-primary` | `#14141A` | |
 | `text-secondary` | `#4E4E58` | |
-| `text-muted` | `#82828C` | |
+| `text-muted` | `#6A6A74` | Darkened from `#82828C` (3.8:1) to 5.4:1 on `surface` |
 | `accent` | `#5B3FD6` | Darker violet — `#7C5CFC` fails AA on white |
 | `accent-secondary` | `#0E7C93` | Cyan darkened for contrast |
 | `accent-muted` | `#EAE4FF` | |
+| `on-accent` | `#F5F5F7` | Ink fails on this violet (2.7:1); light text is 6.2:1 |
 | `success` | `#12855A` | |
 | `warning` | `#9A6206` | |
 | `danger` | `#C42C36` | |
@@ -209,7 +213,8 @@ hatch is `getColors(scheme)` from `@/constants/theme`, for props that cannot rea
 ### Contrast floor
 
 - Body text and all figures: **≥ 4.5:1** against their actual background.
-- `text-muted`: **≥ 3:1**, and never the sole carrier of meaning.
+- `text-muted`: **≥ 4.5:1** on `surface` and `background`, and never the sole carrier of meaning.
+- Text on an `accent` fill uses `on-accent`, never `text-primary`.
 - Semantic state is always **color + icon + text**. See [§28](#28-accessibility).
 - Hairline dividers are decorative; if a divider carries meaning, use `border-strong`.
 
@@ -524,7 +529,7 @@ with a live `useColorScheme()` read — never cache it.
 
 | Variant | Fill | Border | Shadow | Label | Use |
 |---|---|---|---|---|---|
-| `primary` | `bg-accent` | `border-2 border-border-heavy` | `brutal` | `text-text-primary` | **One per view.** The action the screen exists for |
+| `primary` | `bg-accent` | `border-2 border-border-heavy` | `brutal` | `text-on-accent` | **One per view.** The action the screen exists for |
 | `secondary` | `bg-surface` | `border border-border-strong` | `subtle` | `text-text-primary` | Alternative actions, cancel |
 | `ghost` | transparent | `border border-border` | none | `text-text-secondary` | Tertiary, inline, dismiss |
 | `danger` | `bg-danger-muted` | `border-2 border-danger` | `brutal` | `text-danger` | Destructive / destructive-adjacent |
@@ -727,7 +732,7 @@ The AI surface is the product's differentiator and must not read as a generic ch
 
 ### Message anatomy
 
-**User message** — right-aligned, `bg-accent`, `rounded-md`, `text-text-primary`, max 85%
+**User message** — right-aligned, `bg-accent`, `rounded-md`, `text-on-accent`, max 85%
 width. No border, no shadow: the user is not a card.
 
 **Assistant message** — left-aligned, and **not one undifferentiated block**. An assistant turn
@@ -958,7 +963,7 @@ Non-negotiable. A visual treatment that costs an accessibility property is a bug
 trade-off.
 
 **Contrast**
-- Body text and figures ≥ 4.5:1; large figures ≥ 3:1; `text-muted` ≥ 3:1.
+- Body text and figures ≥ 4.5:1; large figures ≥ 3:1; `text-muted` ≥ 4.5:1.
 - `text-muted` is never the only way information is conveyed.
 - Semantic state = **color + icon + text**, always three. See [§22](#22-budgets) for the
   budget example.
@@ -1164,7 +1169,7 @@ one of them, the design is wrong — not the logic.
 |---|---|---|
 | Theme-aware className colors | `src/styles/global.css` | `--color-*` CSS vars → `tailwind.config.js` |
 | Literal colors for native props | `src/constants/colors.js` | re-exported by `src/constants/theme.ts` → `getColors(scheme)` |
-| Color token types | `src/constants/theme.ts` | `getColors`, `spacing`, `radii`, `typeScale` |
+| Color token types | `src/constants/theme.ts` | `getColors`, `useThemeColors`, `spacing`, `radii`, `typeScale` |
 | Spacing scale | `src/constants/spacing.js` | `spacing-*`, `gap-*`, `p-*` |
 | Radius scale | `src/constants/radii.js` | `rounded-*` |
 | Shadows | `src/constants/shadows.ts` | `getShadowTokens(scheme)`, `useShadow(name)` |

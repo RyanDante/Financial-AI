@@ -7,7 +7,7 @@ import { cn } from '@/utils/cn';
 type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
 const VARIANT_CLASSES: Record<ButtonVariant, { container: string; label: string }> = {
-  primary: { container: 'bg-accent border-accent', label: 'text-text-primary' },
+  primary: { container: 'bg-accent border-accent', label: 'text-on-accent' },
   secondary: { container: 'bg-surface border-border-strong', label: 'text-text-primary' },
   danger: { container: 'bg-danger-muted border-danger', label: 'text-danger' },
 };

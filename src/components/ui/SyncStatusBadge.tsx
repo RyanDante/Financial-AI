@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'nativewind';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { Caption } from './Typography';
-import { getColors } from '@/constants/theme';
+import { useThemeColors } from '@/constants/theme';
 import type { SyncStatus } from '@/services/sync/sync.types';
 
 const STATUS_META: Record<SyncStatus, { label: string; colorKey: 'text-muted' | 'accent' | 'success' | 'warning' | 'danger'; icon: keyof typeof Ionicons.glyphMap }> = {
@@ -22,8 +21,7 @@ interface SyncStatusBadgeProps {
 
 /** Small status indicator so the user always knows whether their data is backed up — pulses gently while actively syncing. */
 export function SyncStatusBadge({ status }: SyncStatusBadgeProps) {
-  const { colorScheme } = useColorScheme();
-  const colors = getColors(colorScheme ?? 'dark');
+  const colors = useThemeColors();
   const { label, colorKey, icon } = STATUS_META[status];
   const color = colors[colorKey];
   const opacity = useSharedValue(1);

@@ -7,8 +7,10 @@ import { TransactionRow } from '@/components/finance/TransactionRow';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { calculateAvailableMoney, calculateGoalProgress } from '@/finance/calculations';
+import { useThemeColors } from '@/constants/theme';
 
 export default function HomeScreen() {
+  const colors = useThemeColors();
   const { accounts, categories, transactions, goals, totalBalanceMinor, monthlyIncomeMinor, monthlySpendingMinor, savingsRate, upcomingObligationsMinor, reserveTargetMinor, loadAll } =
     useFinanceStore();
   const currency = useSettingsStore((s) => s.defaultCurrency);
@@ -32,7 +34,7 @@ export default function HomeScreen() {
   return (
     <ScrollView
       className="flex-1 bg-background"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#9D9DAB" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors['text-secondary']} />}
       contentContainerClassName="pb-3xl"
     >
       <ScreenHeader
@@ -40,7 +42,7 @@ export default function HomeScreen() {
         subtitle={accounts.length > 0 ? `${accounts.length} account${accounts.length > 1 ? 's' : ''}` : undefined}
         right={
           <Pressable onPress={() => router.push('/settings')} className="rounded-full p-sm">
-            <Ionicons name="settings-outline" size={22} color="#9D9DAB" />
+            <Ionicons name="settings-outline" size={22} color={colors['text-secondary']} />
           </Pressable>
         }
       />

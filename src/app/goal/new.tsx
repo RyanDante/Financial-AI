@@ -6,8 +6,10 @@ import { goalsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { parseMoneyInput } from '@/utils/currency';
+import { useThemeColors } from '@/constants/theme';
 
 export default function NewGoalScreen() {
+  const colors = useThemeColors();
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const loadAll = useFinanceStore((s) => s.loadAll);
   const [name, setName] = useState('');
@@ -50,7 +52,7 @@ export default function NewGoalScreen() {
           value={name}
           onChangeText={setName}
           placeholder="e.g. Buy a laptop"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
@@ -62,7 +64,7 @@ export default function NewGoalScreen() {
           onChangeText={setTargetInput}
           keyboardType="decimal-pad"
           placeholder="900000"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-[22px] text-text-primary"
         />
       </View>
@@ -74,7 +76,7 @@ export default function NewGoalScreen() {
           onChangeText={setCurrentInput}
           keyboardType="decimal-pad"
           placeholder="0"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>

@@ -3,8 +3,10 @@ import { ScrollView, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
+import { useThemeColors } from '@/constants/theme';
 
 export default function CreateAccountScreen() {
+  const colors = useThemeColors();
   const { signUp, error } = useAuthStore();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,7 +33,7 @@ export default function CreateAccountScreen() {
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Your name"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
@@ -45,7 +47,7 @@ export default function CreateAccountScreen() {
           keyboardType="email-address"
           autoComplete="email"
           placeholder="you@example.com"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
@@ -58,7 +60,7 @@ export default function CreateAccountScreen() {
           secureTextEntry
           autoComplete="new-password"
           placeholder="At least 6 characters"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>

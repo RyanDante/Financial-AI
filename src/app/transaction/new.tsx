@@ -8,8 +8,10 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { parseMoneyInput } from '@/utils/currency';
 import { cn } from '@/utils/cn';
 import type { TransactionType } from '@/types/finance';
+import { useThemeColors } from '@/constants/theme';
 
 export default function NewTransactionScreen() {
+  const colors = useThemeColors();
   const { accounts, categories, addTransaction } = useFinanceStore();
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const [type, setType] = useState<TransactionType>('expense');
@@ -77,7 +79,7 @@ export default function NewTransactionScreen() {
           onChangeText={setAmountInput}
           keyboardType="decimal-pad"
           placeholder="0"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-[22px] text-text-primary"
         />
       </View>
@@ -106,7 +108,7 @@ export default function NewTransactionScreen() {
           value={merchant}
           onChangeText={setMerchant}
           placeholder="e.g. Market, Landlord, Employer"
-          placeholderTextColor="#6B6B78"
+          placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>

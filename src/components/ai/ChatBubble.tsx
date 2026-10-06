@@ -35,7 +35,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
           <ChatLine key={index} line={line} isUser={isUser} />
         ))}
         {checkedTools.length > 0 ? (
-          <Caption className={isUser ? 'text-text-primary/70' : undefined}>Checked: {checkedTools.map((tc) => tc.toolName).join(', ')}</Caption>
+          <Caption className={isUser ? 'text-on-accent/70' : undefined}>Checked: {checkedTools.map((tc) => tc.toolName).join(', ')}</Caption>
         ) : null}
       </View>
     </View>
@@ -60,5 +60,5 @@ function ChatLine({ line, isUser }: { line: string; isUser: boolean }) {
       </Body>
     );
   }
-  return <Body className={isUser ? 'text-text-primary' : undefined}>{line}</Body>;
+  return <Body className={isUser ? 'text-on-accent' : undefined}>{line}</Body>;
 }
