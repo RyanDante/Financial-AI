@@ -1,4 +1,4 @@
-import { currentMonthKey, daysBetween, monthKeyOf, monthRange, shiftMonth } from './months';
+import { currentMonthKey, daysBetween, isInMonth, monthKeyOf, monthRange, shiftMonth } from './months';
 
 describe('months', () => {
   it('formats a local date as YYYY-MM', () => {
@@ -12,10 +12,11 @@ describe('months', () => {
     expect(shiftMonth('2026-09', -6)).toBe('2026-03');
   });
 
-  it('returns a half-open range covering the whole month', () => {
-    const { from, to } = monthRange('2026-02');
-    expect(new Date(from).getTime()).toBe(new Date(2026, 1, 1).getTime());
-    expect(new Date(to).getTime()).toBe(new Date(2026, 2, 1).getTime());
+  it('returns UTC month bounds matching how the engine buckets months', () => {
+    expect(monthRange('2026-02')).toEqual({ from: '2026-02-01T00:00:00.000Z', to: '2026-03-01T00:00:00.000Z' });
+    expect(monthRange('2025-12').to).toBe('2026-01-01T00:00:00.000Z');
+    expect(isInMonth('2026-02-28T23:30:00.000Z', '2026-02')).toBe(true);
+    expect(isInMonth('2026-03-01T00:00:00.000Z', '2026-02')).toBe(false);
   });
 
   it('counts whole days between dates', () => {

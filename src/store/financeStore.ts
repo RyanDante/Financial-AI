@@ -3,13 +3,9 @@ import { accountsRepository, categoriesRepository, goalsRepository, transactions
 import { calculateBalance, calculateMonthlySpending, calculateSavingsRate } from '@/finance/calculations';
 import { getReserveTargetMinor, getUpcomingObligationsMinor } from '@/finance/aggregates';
 import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import { currentMonthKey } from '@/utils/months';
 import type { CreateAccountInput } from '@/database/repositories/accountsRepository';
 import type { Account, Category, Goal, NewTransaction, Transaction } from '@/types/finance';
-
-function currentMonthKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
 
 interface FinanceState {
   isLoading: boolean;

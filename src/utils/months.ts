@@ -20,10 +20,19 @@ export function shiftMonth(month: MonthKey, delta: number): MonthKey {
   return monthKeyOf(new Date(year, monthIndex + delta, 1));
 }
 
-/** ISO bounds for a repository query: `from` inclusive, `to` exclusive (start of the next month). */
+/**
+ * ISO bounds for a repository query covering `month`, in UTC, because the
+ * finance engine buckets transactions by `occurredAt.slice(0, 7)` (the UTC
+ * month). The repository's `to` is inclusive, so callers should still keep
+ * only rows where `isInMonth(tx.occurredAt, month)`.
+ */
 export function monthRange(month: MonthKey): { from: string; to: string } {
-  const [year, monthIndex] = parseMonth(month);
-  return { from: new Date(year, monthIndex, 1).toISOString(), to: new Date(year, monthIndex + 1, 1).toISOString() };
+  return { from: `${month}-01T00:00:00.000Z`, to: `${shiftMonth(month, 1)}-01T00:00:00.000Z` };
+}
+
+/** Same rule as calculateMonthlySpending: the UTC month of the ISO timestamp. */
+export function isInMonth(isoDate: string, month: MonthKey): boolean {
+  return isoDate.slice(0, 7) === month;
 }
 
 /** "September 2026" (or the device locale's equivalent). */

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
+import type { TransactionTypeFilter } from '@/features/transactions/filterTransactions';
 
 interface UIState {
   isAppReady: boolean;
-  activeTransactionFilter: 'all' | 'income' | 'expense';
+  activeTransactionFilter: TransactionTypeFilter;
   setAppReady: (ready: boolean) => void;
   setTransactionFilter: (filter: UIState['activeTransactionFilter']) => void;
 }

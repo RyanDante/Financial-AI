@@ -6,24 +6,24 @@ import { BudgetCategoryRow } from '@/components/finance/BudgetCategoryRow';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { budgetsRepository } from '@/database/repositories';
+import { MonthStepper } from '@/components/ui/MonthStepper';
+import { useMonthTransactions } from '@/features/transactions/useMonthTransactions';
+import { currentMonthKey } from '@/utils/months';
 import { calculateMonthlySpending } from '@/finance/calculations';
 import { majorToMinor } from '@/utils/currency';
 import type { Budget, BudgetCategory } from '@/types/finance';
 
 const DEFAULT_CATEGORY_LIMIT_MAJOR = 20_000;
 
-function currentMonthKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
 export default function BudgetsScreen() {
-  const { categories, transactions } = useFinanceStore();
+  const categories = useFinanceStore((s) => s.categories);
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const month = currentMonthKey();
+  const [month, setMonth] = useState(currentMonthKey());
+  const isCurrentMonth = month === currentMonthKey();
+  const { transactions } = useMonthTransactions(month);
 
   // Reload on focus so a limit changed in the budget/limit modal shows on return.
   useFocusEffect(
@@ -66,17 +66,26 @@ export default function BudgetsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="pb-3xl">
-      <ScreenHeader title="Budgets" subtitle={month} />
+      <ScreenHeader title="Budgets" />
+      <View className="px-lg pb-sm">
+        <MonthStepper month={month} onChange={setMonth} />
+      </View>
 
       <View className="px-lg">
         {!budget ? (
           <Card className="gap-md">
             <EmptyState
               icon="pie-chart-outline"
-              title="No budget set for this month"
-              description={`Create a starting budget across your ${expenseCategories.length} expense categories. You can fine-tune limits later.`}
+              title={isCurrentMonth ? 'No budget set for this month' : 'No budget for this month'}
+              description={
+                isCurrentMonth
+                  ? `Create a starting budget across your ${expenseCategories.length} expense categories. You can fine-tune limits later.`
+                  : 'Budgets are created month by month. Step forward to plan the current month.'
+              }
             />
-            <Button label={isCreating ? 'Creating…' : 'Create this month’s budget'} onPress={handleCreateBudget} disabled={isCreating} />
+            {isCurrentMonth ? (
+              <Button label={isCreating ? 'Creating…' : 'Create this month’s budget'} onPress={handleCreateBudget} disabled={isCreating} />
+            ) : null}
           </Card>
         ) : (
           <Card>
