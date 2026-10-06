@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AmountText, Body, Caption, Card, EmptyState, Heading, Label } from '@/components/ui';
+import * as Haptics from 'expo-haptics';
+import { AmountText, Body, Button, Caption, Card, EmptyState, Heading, Label } from '@/components/ui';
 import { AttachmentRow } from '@/components/finance/AttachmentRow';
 import { transactionsRepository, fileUploadsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
@@ -18,7 +19,7 @@ const OWNER_ENTITY_TYPE = 'transaction';
 export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeColors();
-  const { categories, accounts } = useFinanceStore();
+  const { categories, accounts, deleteTransaction } = useFinanceStore();
   const authUser = useAuthStore((s) => s.user);
 
   const [transaction, setTransaction] = useState<Transaction | null>(null);
@@ -30,13 +31,38 @@ export default function TransactionDetailScreen() {
     setAttachments(await fileUploadsRepository.listUploadsForOwner(OWNER_ENTITY_TYPE, id));
   }, [id]);
 
-  useEffect(() => {
+  // Reload on focus, not just mount, so returning from the edit form shows the changes.
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      let isCurrent = true;
+      (async () => {
+        const tx = await transactionsRepository.getTransactionById(id);
+        if (!isCurrent) return;
+        setTransaction(tx);
+        await loadAttachments();
+      })();
+      return () => {
+        isCurrent = false;
+      };
+    }, [id, loadAttachments]),
+  );
+
+  const handleDelete = () => {
     if (!id) return;
-    (async () => {
-      setTransaction(await transactionsRepository.getTransactionById(id));
-      await loadAttachments();
-    })();
-  }, [id, loadAttachments]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert('Delete this transaction?', 'It will be removed from your balance, budgets and history.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteTransaction(id);
+          router.back();
+        },
+      },
+    ]);
+  };
 
   const handlePick = async (picker: () => Promise<{ uri: string; filename: string; mimeType: string | null; sizeBytes: number | null } | null>) => {
     if (!id) return;
@@ -107,6 +133,16 @@ export default function TransactionDetailScreen() {
           <AttachButton icon="image-outline" label="Photo" disabled={isAttaching} onPress={() => handlePick(pickImageFromLibrary)} />
           <AttachButton icon="document-outline" label="Document" disabled={isAttaching} onPress={() => handlePick(pickDocument)} />
         </View>
+      </View>
+
+      <View className="flex-row gap-sm pt-sm">
+        <Button label="Delete" variant="danger" className="flex-1" onPress={handleDelete} />
+        <Button
+          label="Edit"
+          variant="secondary"
+          className="flex-1"
+          onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
+        />
       </View>
     </ScrollView>
   );

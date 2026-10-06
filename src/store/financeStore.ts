@@ -3,6 +3,7 @@ import { accountsRepository, categoriesRepository, goalsRepository, transactions
 import { calculateBalance, calculateMonthlySpending, calculateSavingsRate } from '@/finance/calculations';
 import { getReserveTargetMinor, getUpcomingObligationsMinor } from '@/finance/aggregates';
 import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import type { CreateAccountInput } from '@/database/repositories/accountsRepository';
 import type { Account, Category, Goal, NewTransaction, Transaction } from '@/types/finance';
 
 function currentMonthKey(): string {
@@ -24,6 +25,13 @@ interface FinanceState {
   reserveTargetMinor: number;
   loadAll: () => Promise<void>;
   addTransaction: (input: NewTransaction) => Promise<void>;
+  updateTransaction: (id: string, patch: Partial<NewTransaction>) => Promise<void>;
+  /** Soft delete: sync pushes it to the cloud as a delete. */
+  deleteTransaction: (id: string) => Promise<void>;
+  /** Returns the updated goal, so callers can react to it reaching `completed`. */
+  addGoalContribution: (goalId: string, amountMinor: number, note?: string | null) => Promise<Goal>;
+  createAccount: (input: CreateAccountInput) => Promise<void>;
+  updateAccount: (id: string, patch: Partial<CreateAccountInput & { isArchived: boolean }>) => Promise<void>;
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
@@ -78,6 +86,32 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   addTransaction: async (input: NewTransaction) => {
     await transactionsRepository.createTransaction(input);
+    await get().loadAll();
+  },
+
+  updateTransaction: async (id, patch) => {
+    await transactionsRepository.updateTransaction(id, patch);
+    await get().loadAll();
+  },
+
+  deleteTransaction: async (id) => {
+    await transactionsRepository.deleteTransaction(id);
+    await get().loadAll();
+  },
+
+  addGoalContribution: async (goalId, amountMinor, note) => {
+    const goal = await goalsRepository.addGoalContribution(goalId, amountMinor, note);
+    await get().loadAll();
+    return goal;
+  },
+
+  createAccount: async (input) => {
+    await accountsRepository.createAccount(input);
+    await get().loadAll();
+  },
+
+  updateAccount: async (id, patch) => {
+    await accountsRepository.updateAccount(id, patch);
     await get().loadAll();
   },
 }));
