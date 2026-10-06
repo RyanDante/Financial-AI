@@ -67,6 +67,15 @@ export default function RootLayout() {
             <Stack.Screen name="goal/new" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
             <Stack.Screen
+              name="goal/[id]"
+              options={{
+                headerShown: true,
+                title: 'Goal',
+                headerStyle: { backgroundColor: colors.background },
+                headerTintColor: colors['text-primary'],
+              }}
+            />
+            <Stack.Screen
               name="alerts"
               options={{
                 headerShown: true,

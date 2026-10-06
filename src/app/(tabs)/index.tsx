@@ -85,13 +85,20 @@ export default function HomeScreen() {
           {activeGoals.map((goal) => {
             const progress = calculateGoalProgress(goal);
             return (
-              <Card key={goal.id} className="gap-sm">
-                <View className="flex-row justify-between">
-                  <Body>{goal.name}</Body>
-                  <Caption>{progress.percent.toFixed(0)}%</Caption>
-                </View>
-                <ProgressBar percent={progress.percent} tone={progress.isComplete ? 'success' : 'accent'} />
-              </Card>
+              <Pressable
+                key={goal.id}
+                onPress={() => router.push({ pathname: '/goal/[id]', params: { id: goal.id } })}
+                accessibilityRole="button"
+                accessibilityLabel={`${goal.name}, ${progress.percent.toFixed(0)}% saved`}
+              >
+                <Card className="gap-sm">
+                  <View className="flex-row justify-between">
+                    <Body>{goal.name}</Body>
+                    <Caption>{progress.percent.toFixed(0)}%</Caption>
+                  </View>
+                  <ProgressBar percent={progress.percent} tone={progress.isComplete ? 'success' : 'accent'} />
+                </Card>
+              </Pressable>
             );
           })}
         </View>

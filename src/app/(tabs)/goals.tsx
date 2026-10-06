@@ -25,7 +25,16 @@ export default function GoalsScreen() {
         {goals.length === 0 ? (
           <EmptyState icon="flag-outline" title="No goals yet" description="Tap + to set your first savings goal." />
         ) : (
-          goals.map((goal) => <GoalCard key={goal.id} goal={goal} />)
+          goals.map((goal) => (
+            <Pressable
+              key={goal.id}
+              onPress={() => router.push({ pathname: '/goal/[id]', params: { id: goal.id } })}
+              accessibilityRole="button"
+              accessibilityLabel={`${goal.name}, open to add money`}
+            >
+              <GoalCard goal={goal} />
+            </Pressable>
+          ))
         )}
       </View>
     </ScrollView>
