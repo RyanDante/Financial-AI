@@ -7,12 +7,11 @@ import { useThemeColors } from '@/constants/theme';
 import { useAlerts } from '@/features/alerts/useAlerts';
 
 const BAR_HEIGHT = 52;
-const BORDER_WIDTH = 1;
 const ICON_HIT_SLOP = { top: 4, bottom: 4, left: 4, right: 4 };
 
 /** Total height the AppBar occupies, for KeyboardAvoidingView offsets on screens below it. */
 export function useAppBarHeight(): number {
-  return useSafeAreaInsets().top + BAR_HEIGHT + BORDER_WIDTH;
+  return useSafeAreaInsets().top + BAR_HEIGHT;
 }
 
 /**
@@ -31,7 +30,7 @@ export function AppBar() {
   };
 
   return (
-    <View className="border-b border-border bg-background" style={{ paddingTop: insets.top }}>
+    <View className="bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center justify-between px-lg" style={{ height: BAR_HEIGHT }}>
         <Text accessibilityRole="header" className="font-display text-[20px] leading-[24px] text-text-primary">
           F-AI

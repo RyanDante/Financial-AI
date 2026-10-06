@@ -1,13 +1,15 @@
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Caption, Heading } from '@/components/ui';
 import { useThemeColors } from '@/constants/theme';
 
 export default function WelcomeScreen() {
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   return (
-    <View className="flex-1 justify-between bg-background p-lg">
+    <View className="flex-1 justify-between bg-background px-lg pt-lg" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
       <View className="flex-1 items-center justify-center gap-lg">
         <View className="h-20 w-20 items-center justify-center rounded-full bg-accent-muted">
           <Ionicons name="cloud-upload-outline" size={36} color={colors.accent} />

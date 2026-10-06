@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Heading, Label } from '@/components/ui';
+import { Body, Button, Caption, Label } from '@/components/ui';
 import { transactionsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -100,7 +100,7 @@ export default function NewTransactionScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg" keyboardShouldPersistTaps="handled">
-      <Heading>{isEditing ? 'Edit transaction' : 'Add transaction'}</Heading>
+      <Stack.Screen options={{ title: isEditing ? 'Edit transaction' : 'Add transaction' }} />
 
       <View className="flex-row gap-sm">
         {(['expense', 'income'] as const).map((t) => (
@@ -160,10 +160,7 @@ export default function NewTransactionScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <View className="flex-row gap-sm pt-sm">
-        <Button label="Cancel" variant="secondary" className="flex-1" onPress={() => router.back()} />
-        <Button label={isSaving ? 'Saving…' : 'Save'} className="flex-1" onPress={handleSave} disabled={isSaving} />
-      </View>
+      <Button label={isSaving ? 'Saving…' : 'Save transaction'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </ScrollView>
   );
 }

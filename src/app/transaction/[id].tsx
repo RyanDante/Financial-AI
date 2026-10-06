@@ -18,7 +18,6 @@ const OWNER_ENTITY_TYPE = 'transaction';
 
 export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colors = useThemeColors();
   const { categories, accounts, deleteTransaction } = useFinanceStore();
   const authUser = useAuthStore((s) => s.user);
 
@@ -98,11 +97,6 @@ export default function TransactionDetailScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
-      <Pressable onPress={() => router.back()} className="flex-row items-center gap-xs">
-        <Ionicons name="chevron-back" size={18} color={colors['text-secondary']} />
-        <Caption>Back</Caption>
-      </Pressable>
-
       <View className="items-center gap-xs py-md">
         <AmountText valueMinor={isIncome ? transaction.amountMinor : -transaction.amountMinor} currency={transaction.currency} size="lg" tone={isIncome ? 'success' : 'primary'} forceSign={isIncome} />
         <Heading>{transaction.merchant || transaction.description || category?.name || 'Transaction'}</Heading>

@@ -15,7 +15,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useSyncStore } from '@/store/syncStore';
 import { useThemeStore } from '@/features/theme/theme.store';
-import { getColors } from '@/constants/theme';
+import { modalOptions, usePageHeaderOptions } from '@/components/navigation/pageHeader';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -29,7 +29,7 @@ export default function RootLayout() {
   const initializeSync = useSyncStore((s) => s.initialize);
   const loadTheme = useThemeStore((s) => s.loadTheme);
   const { colorScheme } = useColorScheme();
-  const colors = getColors(colorScheme ?? 'dark');
+  const pageHeaderOptions = usePageHeaderOptions();
 
   useEffect(() => {
     (async () => {
@@ -61,40 +61,17 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <View className="flex-1 bg-background" onLayout={onLayoutRootView}>
           <StatusBar style={colorScheme === 'light' ? 'dark' : 'light'} />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="transaction/new" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="goal/new" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="budget/limit" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="account/edit" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
-            <Stack.Screen
-              name="goal/[id]"
-              options={{
-                headerShown: true,
-                title: 'Goal',
-                headerStyle: { backgroundColor: colors.background },
-                headerTintColor: colors['text-primary'],
-              }}
-            />
-            <Stack.Screen
-              name="alerts"
-              options={{
-                headerShown: true,
-                title: 'Alerts',
-                headerStyle: { backgroundColor: colors.background },
-                headerTintColor: colors['text-primary'],
-              }}
-            />
-            <Stack.Screen
-              name="settings"
-              options={{
-                headerShown: true,
-                title: 'Settings',
-                headerStyle: { backgroundColor: colors.background },
-                headerTintColor: colors['text-primary'],
-              }}
-            />
+          <Stack screenOptions={pageHeaderOptions}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="transaction/[id]" options={{ title: 'Transaction' }} />
+            <Stack.Screen name="goal/[id]" options={{ title: 'Goal' }} />
+            <Stack.Screen name="alerts" options={{ title: 'Alerts' }} />
+            <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+            <Stack.Screen name="transaction/new" options={modalOptions('Add transaction')} />
+            <Stack.Screen name="goal/new" options={modalOptions('New goal')} />
+            <Stack.Screen name="budget/limit" options={modalOptions('Budget limit')} />
+            <Stack.Screen name="account/edit" options={modalOptions('Account')} />
           </Stack>
         </View>
       </SafeAreaProvider>

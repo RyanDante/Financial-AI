@@ -646,12 +646,27 @@ Routing is owned by Expo Router and **is not changed by this document.** Only pr
 - Content scrolls *under* the bar — every scroll container gets `pb` of
   `4xl + tab bar height + inset`, never a magic number.
 
+### Page headers: one rule
+
+- **Tab screens** use the `AppBar` (below). **Every other page** uses the platform's native
+  header with `usePageHeaderOptions()` from `src/components/navigation/pageHeader.tsx`:
+  flat on `background`, title in Inter 600 17pt, `text-primary` tint, no shadow, minimal
+  back button. The native header handles the status bar, notch, iOS sheet modals and the
+  back gesture, so no page pads for the safe area itself.
+- **Modals** use `modalOptions(title)`: `presentation: 'modal'` and a `CloseButton` (✕, 44×44,
+  "Close") on the left. Their footer is one full-width primary action ("Save transaction");
+  there is no separate Cancel button, because Close is in the header.
+- Titles that depend on data are set from the screen with `<Stack.Screen options={{ title }} />`
+  (e.g. "Edit transaction", "Food limit").
+- **No screen draws its own title row or back button.** A `Heading` at the top of a page's
+  content, or a "Back" caption, is a bug.
+
 ### App bar
 
 - `AppBar` (`src/components/ui/AppBar.tsx`) is the fixed bar above every tab screen, mounted
   once as the Tabs `header` in `src/app/(tabs)/_layout.tsx`. It does not scroll.
 - It **owns the top safe-area inset** (`paddingTop: insets.top`), then a 52pt row on
-  `bg-background` with a hairline `border-b border-border`.
+  `bg-background`, flat like the native page headers.
 - Left: the name "F-AI" in `font-display` 20/24. Right: the alerts bell
   (`notifications-outline`) and settings (`settings-outline`), 44×44 targets, icons in
   `text-secondary`. A `danger` dot on the bell when `useAlerts()` returns anything; the

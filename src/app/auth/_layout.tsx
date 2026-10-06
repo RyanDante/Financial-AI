@@ -1,22 +1,13 @@
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'nativewind';
-import { getColors } from '@/constants/theme';
+import { CloseButton, usePageHeaderOptions } from '@/components/navigation/pageHeader';
 
 export default function AuthLayout() {
-  const { colorScheme } = useColorScheme();
-  const colors = getColors(colorScheme ?? 'dark');
+  const pageHeaderOptions = usePageHeaderOptions();
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors['text-primary'],
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    >
-      <Stack.Screen name="welcome" options={{ title: '' }} />
+    <Stack screenOptions={pageHeaderOptions}>
+      {/* The flow opens as a modal; its first page closes it, the rest go back. */}
+      <Stack.Screen name="welcome" options={{ title: '', headerLeft: () => <CloseButton /> }} />
       <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
       <Stack.Screen name="create-account" options={{ title: 'Create account' }} />
       <Stack.Screen name="forgot-password" options={{ title: 'Reset password' }} />

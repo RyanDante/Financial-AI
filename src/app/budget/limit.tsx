@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Heading, Label } from '@/components/ui';
+import { Body, Button, Caption, Label } from '@/components/ui';
 import { budgetsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { useThemeColors } from '@/constants/theme';
@@ -39,10 +39,8 @@ export default function BudgetLimitScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg" keyboardShouldPersistTaps="handled">
-      <View className="gap-xs">
-        <Heading>{category?.name ?? 'Category'} limit</Heading>
-        <Body className="text-text-secondary">Current limit: {formatMoney(currentLimitMinor, currency)} this month.</Body>
-      </View>
+      <Stack.Screen options={{ title: `${category?.name ?? 'Category'} limit` }} />
+      <Body className="text-text-secondary">Current limit: {formatMoney(currentLimitMinor, currency)} this month.</Body>
 
       <View className="gap-sm">
         <Label>Monthly limit ({currency})</Label>
@@ -58,10 +56,7 @@ export default function BudgetLimitScreen() {
         {error ? <Caption className="text-danger">{error}</Caption> : null}
       </View>
 
-      <View className="flex-row gap-sm pt-sm">
-        <Button label="Cancel" variant="secondary" className="flex-1" onPress={() => router.back()} />
-        <Button label={isSaving ? 'Saving…' : 'Save'} className="flex-1" onPress={handleSave} disabled={isSaving} />
-      </View>
+      <Button label={isSaving ? 'Saving…' : 'Save limit'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </ScrollView>
   );
 }

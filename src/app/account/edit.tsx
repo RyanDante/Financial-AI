@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Heading, Label } from '@/components/ui';
+import { Body, Button, Caption, Label } from '@/components/ui';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeColors } from '@/constants/theme';
@@ -73,7 +73,7 @@ export default function EditAccountScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg" keyboardShouldPersistTaps="handled">
-      <Heading>{existing ? 'Edit account' : 'Add account'}</Heading>
+      <Stack.Screen options={{ title: existing ? 'Edit account' : 'Add account' }} />
 
       <View className="gap-sm">
         <Label>Name</Label>
@@ -122,10 +122,7 @@ export default function EditAccountScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <View className="flex-row gap-sm pt-sm">
-        <Button label="Cancel" variant="secondary" className="flex-1" onPress={() => router.back()} />
-        <Button label={isSaving ? 'Saving…' : 'Save'} className="flex-1" onPress={handleSave} disabled={isSaving} />
-      </View>
+      <Button label={isSaving ? 'Saving…' : 'Save account'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
 
       {existing && canArchiveAccount(existing, accounts) ? (
         <Pressable onPress={handleArchive} accessibilityRole="button" className="items-center py-md">

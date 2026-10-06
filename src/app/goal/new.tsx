@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Caption, Heading, Label } from '@/components/ui';
+import { Button, Caption, Label } from '@/components/ui';
 import { goalsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -44,8 +44,6 @@ export default function NewGoalScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
-      <Heading>New goal</Heading>
-
       <View className="gap-sm">
         <Label>Goal name</Label>
         <TextInput
@@ -83,10 +81,7 @@ export default function NewGoalScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <View className="flex-row gap-sm pt-sm">
-        <Button label="Cancel" variant="secondary" className="flex-1" onPress={() => router.back()} />
-        <Button label={isSaving ? 'Saving…' : 'Create goal'} className="flex-1" onPress={handleSave} disabled={isSaving} />
-      </View>
+      <Button label={isSaving ? 'Saving…' : 'Create goal'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </ScrollView>
   );
 }
