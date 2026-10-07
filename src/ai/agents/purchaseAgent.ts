@@ -2,6 +2,7 @@ import { formatMoney, majorToMinor } from '@/utils/currency';
 import type { PurchaseImpactResult } from '@/finance/calculations';
 import { currentMonthKey } from './dateEntities';
 import { buildAgentResponse, type AgentClaim, type AgentDefinition } from './types';
+import { t } from '@/i18n';
 
 export const PURCHASE_AGENT_TOOLS = ['calculatePurchaseImpact', 'getBudgetStatus', 'calculateCashFlow'];
 
@@ -48,7 +49,7 @@ export const purchaseAgent: AgentDefinition = {
     const amountMajor = request.entities.amountMajor as number | undefined;
     if (amountMajor === undefined || Number.isNaN(amountMajor) || amountMajor <= 0) {
       return buildAgentResponse({
-        claims: [{ kind: 'ai_interpretation', text: "I didn't catch an amount — how much are you thinking of spending?" }],
+        claims: [{ kind: 'ai_interpretation', text: t('ag.purchase.noAmount') }],
       });
     }
 
@@ -61,39 +62,39 @@ export const purchaseAgent: AgentDefinition = {
 
     if (!result) {
       return buildAgentResponse({
-        claims: [{ kind: 'ai_interpretation', text: "I don't have enough account data yet to evaluate this purchase." }],
+        claims: [{ kind: 'ai_interpretation', text: t('ag.purchase.noData') }],
       });
     }
 
     const claims: AgentClaim[] = [
-      { kind: 'fact', text: `Your current balance is ${formatMoney(result.currentBalanceMinor, context.currency)}.` },
+      { kind: 'fact', text: t('ag.purchase.balance', { amount: formatMoney(result.currentBalanceMinor, context.currency) }) },
       {
         kind: 'calculation',
-        text: `After this ${formatMoney(result.purchaseAmountMinor, context.currency)} purchase, your projected balance would be ${formatMoney(result.projectedBalanceMinor, context.currency)}.`,
+        text: t('ag.purchase.after', { amount: formatMoney(result.purchaseAmountMinor, context.currency), balance: formatMoney(result.projectedBalanceMinor, context.currency) }),
       },
-      { kind: 'fact', text: `You have ${formatMoney(result.upcomingObligationsMinor, context.currency)} in upcoming obligations (recurring expenses and subscriptions) this month.` },
+      { kind: 'fact', text: t('ag.purchase.obligations', { amount: formatMoney(result.upcomingObligationsMinor, context.currency) }) },
     ];
 
     if (!result.canCoverObligationsAfterPurchase) {
-      claims.push({ kind: 'projection', text: "This purchase would leave your balance unable to fully cover those upcoming obligations on its own." });
+      claims.push({ kind: 'projection', text: t('ag.purchase.cantCover') });
     }
 
     if (result.isReserveIntactAfterPurchase) {
       claims.push({
         kind: 'fact',
-        text: `Your emergency reserve target of ${formatMoney(result.reserveTargetMinor, context.currency)} would remain intact.`,
+        text: t('ag.purchase.reserveIntact', { amount: formatMoney(result.reserveTargetMinor, context.currency) }),
       });
     } else {
       claims.push({
         kind: 'projection',
-        text: `This would leave you ${formatMoney(result.shortfallMinor, context.currency)} short of your reserve target and upcoming obligations.`,
+        text: t('ag.purchase.short', { amount: formatMoney(result.shortfallMinor, context.currency) }),
       });
     }
 
     if (cashFlow) {
       claims.push({
         kind: 'fact',
-        text: `This month you've taken in ${formatMoney(cashFlow.incomeMinor, context.currency)} and spent ${formatMoney(cashFlow.expenseMinor, context.currency)}, a net cash flow of ${formatMoney(cashFlow.netMinor, context.currency)}.`,
+        text: t('ag.purchase.cashFlow', { income: formatMoney(cashFlow.incomeMinor, context.currency), spent: formatMoney(cashFlow.expenseMinor, context.currency), net: formatMoney(cashFlow.netMinor, context.currency) }),
       });
     }
 
@@ -106,8 +107,8 @@ export const purchaseAgent: AgentDefinition = {
         kind: 'calculation',
         text:
           remainingAfterPurchaseMinor >= 0
-            ? `Counted against this month's budget, you'd still have ${formatMoney(remainingAfterPurchaseMinor, context.currency)} left.`
-            : `Counted against this month's budget, this would put you ${formatMoney(Math.abs(remainingAfterPurchaseMinor), context.currency)} over.`,
+            ? t('ag.purchase.budgetLeft', { amount: formatMoney(remainingAfterPurchaseMinor, context.currency) })
+            : t('ag.purchase.budgetOver', { amount: formatMoney(Math.abs(remainingAfterPurchaseMinor), context.currency) }),
       });
     }
 
@@ -116,7 +117,7 @@ export const purchaseAgent: AgentDefinition = {
     if (maxDelay > 0) {
       claims.push({
         kind: 'assumption',
-        text: `If this came out of your goal contributions instead, it could delay them by roughly ${maxDelay.toFixed(1)} month(s).`,
+        text: t('ag.purchase.goalDelay', { months: maxDelay.toFixed(1) }),
       });
     }
 

@@ -7,6 +7,7 @@ import { AgentFallback, runAgentWithLLM } from './llmRunner';
 import { routeWithLLM } from './llmRouter';
 import { guardClaims } from './numberGuard';
 import type { AgentRegistry } from './registry';
+import { t } from '@/i18n';
 
 export interface OrchestratorLLM {
   client: LLMClient;
@@ -72,7 +73,7 @@ export class Orchestrator {
         return {
           ...buildAgentResponse({
             claims: guarded.claims,
-            warnings: guarded.downgraded > 0 ? ["Some figures couldn't be matched to your data, so they're shown as interpretation, not fact."] : [],
+            warnings: guarded.downgraded > 0 ? [t('ag.orch.downgraded')] : [],
             followUpSuggestions: result.followUps,
             metadata: { mode: 'llm', provider: this.llm.client.provider, model: this.llm.client.model, downgradedClaims: guarded.downgraded },
           }),
@@ -132,8 +133,7 @@ export class Orchestrator {
       claims: [
         {
           kind: 'ai_interpretation',
-          text:
-            "I'm not sure what you're asking. I can help with spending, budgets, goals, bills, forecasts or purchases. Try \"How much did I spend this month?\" or \"Can I afford a 100,000 XAF purchase?\"",
+          text: t('ag.orch.unknown'),
         },
       ],
     });
@@ -150,7 +150,7 @@ export class Orchestrator {
   private agentFailureResponse(agentName: string): AgentResponse {
     return {
       ...buildAgentResponse({
-        claims: [{ kind: 'ai_interpretation', text: "Something went wrong while reading your data, so I couldn't answer that. Please try again." }],
+        claims: [{ kind: 'ai_interpretation', text: t('ag.orch.error') }],
         warnings: [`${agentName} failed.`],
       }),
       agentName,
@@ -160,7 +160,7 @@ export class Orchestrator {
 
 /** A short, user-facing line explaining why the offline answer was used. */
 function offlineNote(error: unknown): string {
-  if (error instanceof LLMError && !error.retryable) return `Answered offline: ${error.message}`;
-  if (error instanceof AgentFallback && error.reason === 'refusal') return 'Answered offline: the AI model declined this question.';
-  return 'Answered offline: the AI model was unavailable, so this is the built-in answer.';
+  if (error instanceof LLMError && !error.retryable) return t('ag.orch.offline', { reason: error.message });
+  if (error instanceof AgentFallback && error.reason === 'refusal') return t('ag.orch.declined');
+  return t('ag.orch.unavailable');
 }

@@ -1,5 +1,6 @@
 import { formatMoney, majorToMinor } from '@/utils/currency';
 import { buildAgentResponse, type AgentClaim, type AgentDefinition } from './types';
+import { getLanguage, getLocale, t } from '@/i18n';
 
 export const GOAL_AGENT_TOOLS = ['getGoals', 'getGoalProgress', 'calculateGoalProjection', 'calculateCashFlow'];
 
@@ -52,8 +53,8 @@ export const goalAgent: AgentDefinition = {
 
     if (goals.length === 0) {
       return buildAgentResponse({
-        claims: [{ kind: 'fact', text: 'You have no goals set up yet.' }],
-        followUpSuggestions: ['Want to create one?'],
+        claims: [{ kind: 'fact', text: t('ag.goal.none') }],
+        followUpSuggestions: [t('ag.goal.create')],
       });
     }
 
@@ -62,29 +63,29 @@ export const goalAgent: AgentDefinition = {
 
     if (!target) {
       // Multiple goals and none named — summarize all of them, same as the pre-agent behavior.
-      const lines = goals.map((g) => `${g.goal.name}: ${g.progress.percent.toFixed(0)}% complete`);
+      const lines = goals.map((g) => t('ag.goal.line', { goal: g.goal.name, percent: g.progress.percent.toFixed(0) }));
       return buildAgentResponse({
-        claims: [{ kind: 'fact', text: `Your goal progress:\n${lines.map((l) => `  - ${l}`).join('\n')}` }],
-        followUpSuggestions: ['Ask about a specific goal by name for more detail.'],
+        claims: [{ kind: 'fact', text: t('ag.goal.progress', { lines: lines.map((l) => `  - ${l}`).join('\n') }) }],
+        followUpSuggestions: [t('ag.goal.askSpecific')],
       });
     }
 
     const claims: AgentClaim[] = [
       {
         kind: 'fact',
-        text: `${target.goal.name}: ${formatMoney(target.goal.currentAmountMinor, context.currency)} of ${formatMoney(target.goal.targetAmountMinor, context.currency)} (${target.progress.percent.toFixed(0)}%).`,
+        text: t('ag.goal.status', { goal: target.goal.name, current: formatMoney(target.goal.currentAmountMinor, context.currency), target: formatMoney(target.goal.targetAmountMinor, context.currency), percent: target.progress.percent.toFixed(0) }),
       },
     ];
 
     if (target.progress.isComplete) {
-      claims.push({ kind: 'fact', text: 'This goal is already complete.' });
+      claims.push({ kind: 'fact', text: t('ag.goal.complete') });
     } else if (target.progress.isOverdue) {
-      claims.push({ kind: 'fact', text: "This goal's deadline has already passed without being reached." });
+      claims.push({ kind: 'fact', text: t('ag.goal.overdue') });
     } else if (target.requiredMonthlySavingsMinor !== null) {
-      claims.push({ kind: 'calculation', text: `Reaching it by the deadline needs about ${formatMoney(target.requiredMonthlySavingsMinor, context.currency)}/month.` });
-      claims.push({ kind: 'assumption', text: `This assumes no further withdrawals and steady monthly contributions from now on.` });
+      claims.push({ kind: 'calculation', text: t('ag.goal.needed', { amount: formatMoney(target.requiredMonthlySavingsMinor, context.currency) }) });
+      claims.push({ kind: 'assumption', text: t('ag.goal.neededAssumption') });
     } else {
-      claims.push({ kind: 'fact', text: `${formatMoney(target.progress.remainingMinor, context.currency)} left, with no deadline set.` });
+      claims.push({ kind: 'fact', text: t('ag.goal.noDeadline', { amount: formatMoney(target.progress.remainingMinor, context.currency) }) });
     }
 
     const hypotheticalAmount = request.entities.amountMajor as number | undefined;
@@ -99,11 +100,11 @@ export const goalAgent: AgentDefinition = {
         const date = new Date(projection.projectedCompletionDate);
         claims.push({
           kind: 'projection',
-          text: `At ${formatMoney(monthlyContributionMinor, context.currency)}/month, you'd reach this goal around ${date.toLocaleDateString()}.`,
+          text: t('ag.goal.projection', { amount: formatMoney(monthlyContributionMinor, context.currency), date: date.toLocaleDateString(getLanguage() === 'fr' ? getLocale() : undefined) }),
         });
-        claims.push({ kind: 'assumption', text: 'This assumes that exact contribution every month with no interruptions.' });
+        claims.push({ kind: 'assumption', text: t('ag.goal.projectionAssumption') });
       } else {
-        claims.push({ kind: 'fact', text: `${formatMoney(monthlyContributionMinor, context.currency)}/month would never reach this goal on its own.` });
+        claims.push({ kind: 'fact', text: t('ag.goal.never', { amount: formatMoney(monthlyContributionMinor, context.currency) }) });
       }
     }
 

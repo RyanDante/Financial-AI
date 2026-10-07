@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Body, Button, Caption } from '@/components/ui';
 import { useThemeColors } from '@/constants/theme';
 import { getSharing } from '@/features/share/sharingModule';
+import { useT } from '@/i18n';
 
 const sharing = getSharing();
 
@@ -18,6 +19,7 @@ export default function ShareScreen() {
 
 function IncomingShare() {
   const colors = useThemeColors();
+  const { t } = useT();
   // `sharing` is fixed for the app's lifetime, so this hook is always called.
   const { resolvedSharedPayloads, isResolving, error, clearSharedPayloads } = sharing!.useIncomingShare();
 
@@ -38,25 +40,26 @@ function IncomingShare() {
     return (
       <View className="flex-1 items-center justify-center gap-sm bg-background">
         <ActivityIndicator color={colors['accent-secondary']} />
-        <Caption>Opening what you shared…</Caption>
+        <Caption>{t('share.opening')}</Caption>
       </View>
     );
   }
 
   return (
     <View className="flex-1 items-center justify-center gap-md bg-background p-xl">
-      <Body className="text-center">{error ? "F-AI couldn't open what you shared." : 'Nothing was shared.'}</Body>
-      <Caption className="text-center">Share a MoMo or Orange Money SMS (or a screenshot of one) to F-AI to import it.</Caption>
-      <Button label="Go to Overview" variant="secondary" onPress={() => router.replace('/')} />
+      <Body className="text-center">{error ? t('share.failed') : t('share.nothing')}</Body>
+      <Caption className="text-center">{t('share.hint')}</Caption>
+      <Button label={t('common.goToOverview')} variant="secondary" onPress={() => router.replace('/')} />
     </View>
   );
 }
 
 function Unsupported() {
+  const { t } = useT();
   return (
     <View className="flex-1 items-center justify-center gap-md bg-background p-xl">
-      <Body className="text-center">Sharing to F-AI needs the installed F-AI app (a development build), not Expo Go.</Body>
-      <Button label="Import an SMS by pasting it" variant="secondary" onPress={() => router.replace('/import/sms')} />
+      <Body className="text-center">{t('share.unsupported')}</Body>
+      <Button label={t('share.paste')} variant="secondary" onPress={() => router.replace('/import/sms')} />
     </View>
   );
 }

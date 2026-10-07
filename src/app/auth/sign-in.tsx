@@ -5,9 +5,11 @@ import { Body, Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useThemeColors } from '@/constants/theme';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 export default function SignInScreen() {
   const colors = useThemeColors();
+  const { t } = useT();
   const { signIn, error } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,7 @@ export default function SignInScreen() {
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <View className="gap-sm">
-        <Label>Email</Label>
+        <Label>{t('auth.email')}</Label>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -42,7 +44,7 @@ export default function SignInScreen() {
       </View>
 
       <View className="gap-sm">
-        <Label>Password</Label>
+        <Label>{t('auth.password')}</Label>
         <TextInput
           value={password}
           onChangeText={setPassword}
@@ -56,10 +58,10 @@ export default function SignInScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <Button label={isSubmitting ? 'Signing in…' : 'Sign in'} onPress={handleSubmit} disabled={isSubmitting || !email || !password} />
+      <Button label={isSubmitting ? t('auth.signingIn') : t('auth.signIn')} onPress={handleSubmit} disabled={isSubmitting || !email || !password} />
 
       <Link href="/auth/forgot-password" asChild>
-        <Body className="text-center text-accent-secondary">Forgot your password?</Body>
+        <Body className="text-center text-accent-secondary">{t('auth.forgot')}</Body>
       </Link>
     </FormScrollView>
   );

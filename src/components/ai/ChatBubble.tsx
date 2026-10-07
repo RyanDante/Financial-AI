@@ -6,6 +6,7 @@ import { cn } from '@/utils/cn';
 import { extractAgentName, visibleToolCalls } from '@/types/ai';
 import type { ChatMessage } from '@/store/aiStore';
 import { useT, type MessageKey } from '@/i18n';
+import { agentLabel } from '@/i18n';
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -61,7 +62,7 @@ export function ChatBubble({ message, onRetry }: ChatBubbleProps) {
         className={cn('max-w-[85%] gap-xs rounded-lg px-lg py-md', isUser ? 'bg-accent' : 'border border-border bg-surface')}
         style={{ opacity: message.status === 'sending' ? 0.7 : 1 }}
       >
-        {agentName ? <Badge label={agentName} tone="accent" className="mb-xs" /> : null}
+        {agentName ? <Badge label={agentLabel(agentName)} tone="accent" className="mb-xs" /> : null}
         {lines.map((line, index) => (
           <ChatLine key={index} line={line} isUser={isUser} />
         ))}

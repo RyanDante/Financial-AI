@@ -46,3 +46,8 @@ export function useT() {
 export function categoryLabel(name: string, language: Language = getLanguage()): string {
   return DICTIONARIES[language][`cat.${name}`] ?? name;
 }
+
+/** A copilot specialist's display name ("Spending Agent" → "Agent Dépenses"). */
+export function agentLabel(name: string, language: Language = getLanguage()): string {
+  return DICTIONARIES[language][`agent.${name}`] ?? name;
+}

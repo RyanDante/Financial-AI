@@ -2,6 +2,7 @@ import { formatMoney } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
 import { lastWeekRange } from './dateEntities';
 import { buildAgentResponse, type AgentDefinition } from './types';
+import { getLanguage, getLocale, t, type MessageKey } from '@/i18n';
 
 export const TRANSACTION_AGENT_TOOLS = ['getTransactions'];
 
@@ -23,8 +24,10 @@ function mentionsLargest(text: string): boolean {
 }
 
 function describeTransaction(tx: TransactionShape, currency: CurrencyCode): string {
-  const label = tx.merchant ?? tx.description ?? 'Unlabeled transaction';
-  return `${label}, ${formatMoney(tx.amountMinor, currency)} (${tx.type}) on ${new Date(tx.occurredAt).toLocaleDateString()}`;
+  const label = tx.merchant ?? tx.description ?? t('ag.tx.unlabeled');
+  const type = ['expense', 'income', 'transfer'].includes(tx.type) ? t(`ag.tx.type.${tx.type}` as MessageKey) : tx.type;
+  const date = new Date(tx.occurredAt).toLocaleDateString(getLanguage() === 'fr' ? getLocale() : undefined);
+  return t('ag.tx.line', { label, amount: formatMoney(tx.amountMinor, currency), type, date });
 }
 
 /**
@@ -48,31 +51,31 @@ export const transactionAgent: AgentDefinition = {
       const { from, to } = lastWeekRange();
       const transactions = (await tools.execute('getTransactions', { from, to })) as TransactionShape[];
       if (transactions.length === 0) {
-        return buildAgentResponse({ claims: [{ kind: 'fact', text: 'No transactions recorded in the last week.' }] });
+        return buildAgentResponse({ claims: [{ kind: 'fact', text: t('ag.tx.noneLastWeek') }] });
       }
       const lines = transactions.map((tx) => `  - ${describeTransaction(tx, context.currency)}`);
-      return buildAgentResponse({ claims: [{ kind: 'fact', text: `Transactions from the last week:\n${lines.join('\n')}` }] });
+      return buildAgentResponse({ claims: [{ kind: 'fact', text: t('ag.tx.lastWeek', { lines: lines.join('\n') }) }] });
     }
 
     if (mentionsLargest(request.text)) {
       const transactions = (await tools.execute('getTransactions', {})) as TransactionShape[];
       if (transactions.length === 0) {
-        return buildAgentResponse({ claims: [{ kind: 'fact', text: 'No transactions recorded yet.' }] });
+        return buildAgentResponse({ claims: [{ kind: 'fact', text: t('ag.tx.noneYet') }] });
       }
       const largest = [...transactions].sort((a, b) => Math.abs(b.amountMinor) - Math.abs(a.amountMinor)).slice(0, 5);
       const lines = largest.map((tx) => `  - ${describeTransaction(tx, context.currency)}`);
-      return buildAgentResponse({ claims: [{ kind: 'fact', text: `Your largest transactions:\n${lines.join('\n')}` }] });
+      return buildAgentResponse({ claims: [{ kind: 'fact', text: t('ag.tx.largest', { lines: lines.join('\n') }) }] });
     }
 
     const transactions = (await tools.execute('getTransactions', { limit: 1 })) as TransactionShape[];
     if (transactions.length === 0) {
-      return buildAgentResponse({ claims: [{ kind: 'fact', text: 'No transactions recorded yet.' }] });
+      return buildAgentResponse({ claims: [{ kind: 'fact', text: t('ag.tx.noneYet') }] });
     }
 
     return buildAgentResponse({
       claims: [
-        { kind: 'fact', text: `Most recent transaction: ${describeTransaction(transactions[0], context.currency)}.` },
-        { kind: 'ai_interpretation', text: "I can't yet tell which specific transaction you mean from text alone — open it from the Transactions list for full detail." },
+        { kind: 'fact', text: t('ag.tx.mostRecent', { line: describeTransaction(transactions[0], context.currency) }) },
+        { kind: 'ai_interpretation', text: t('ag.tx.cantTell') },
       ],
     });
   },

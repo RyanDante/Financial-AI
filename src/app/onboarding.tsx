@@ -15,6 +15,8 @@ import { CURRENCIES, type CurrencyCode } from '@/constants/currencies';
 import { useThemeColors } from '@/constants/theme';
 import { majorToMinor, parseMoneyInput } from '@/utils/currency';
 import { currentMonthKey } from '@/utils/months';
+import { useT } from '@/i18n';
+import { setLanguage } from '@/i18n/languageSettings';
 
 const STEPS = ['currency', 'accounts', 'payday', 'budget'] as const;
 type Step = 'welcome' | (typeof STEPS)[number] | 'done';
@@ -28,6 +30,7 @@ const DEFAULT_CATEGORY_LIMIT_MAJOR = 20_000;
  */
 export default function OnboardingScreen() {
   const colors = useThemeColors();
+  const { t, language } = useT();
   const insets = useSafeAreaInsets();
   const { accounts, categories, loadAll } = useFinanceStore();
   const { defaultCurrency, setDefaultCurrency } = useSettingsStore();
@@ -68,18 +71,18 @@ export default function OnboardingScreen() {
     const momo = parse(momoBalance);
     const bank = parse(bankBalance);
     if (cash === null || momo === null || bank === null) {
-      setError('Balances must be numbers, e.g. 25000. Leave a field empty for 0.');
+      setError(t('onb.balanceError'));
       return;
     }
     if (useBank && !bankName.trim()) {
-      setError('Name your bank account, e.g. "Afriland".');
+      setError(t('onb.bankNameError'));
       return;
     }
     setIsSaving(true);
     const cashAccount = accounts.find((a) => a.type === 'cash');
     if (cashAccount) await accountsRepository.updateAccount(cashAccount.id, { initialBalanceMinor: cash, currency: defaultCurrency });
-    else await accountsRepository.createAccount({ name: 'Cash', type: 'cash', currency: defaultCurrency, initialBalanceMinor: cash });
-    if (useMomo) await accountsRepository.createAccount({ name: momoName.trim() || 'Mobile money', type: 'mobile_money', currency: defaultCurrency, initialBalanceMinor: momo });
+    else await accountsRepository.createAccount({ name: t('onb.cashAccount'), type: 'cash', currency: defaultCurrency, initialBalanceMinor: cash });
+    if (useMomo) await accountsRepository.createAccount({ name: momoName.trim() || t('onb.momoAccount'), type: 'mobile_money', currency: defaultCurrency, initialBalanceMinor: momo });
     if (useBank) await accountsRepository.createAccount({ name: bankName.trim(), type: 'checking', currency: defaultCurrency, initialBalanceMinor: bank });
     await loadAll();
     setIsSaving(false);
@@ -89,11 +92,11 @@ export default function OnboardingScreen() {
   const savePayday = async () => {
     const amountMinor = parseMoneyInput(salary, defaultCurrency);
     if (amountMinor === null || amountMinor <= 0) {
-      setError('Enter your usual pay, or tap Skip.');
+      setError(t('onb.payError'));
       return;
     }
     setIsSaving(true);
-    await incomeRepository.createIncomeSource({ source: 'Salary', amountMinor, currency: defaultCurrency, frequency: 'monthly', nextExpectedAt: payday.toISOString() });
+    await incomeRepository.createIncomeSource({ source: t('onb.salary'), amountMinor, currency: defaultCurrency, frequency: 'monthly', nextExpectedAt: payday.toISOString() });
     setIsSaving(false);
     next('budget');
   };
@@ -103,7 +106,7 @@ export default function OnboardingScreen() {
     const month = currentMonthKey();
     if (!(await budgetsRepository.getBudgetForMonth(month))) {
       await budgetsRepository.createBudget({
-        name: 'Monthly budget',
+        name: t('budgets.defaultName'),
         month,
         currency: defaultCurrency,
         categories: categories
@@ -143,10 +146,10 @@ export default function OnboardingScreen() {
         {stepIndex >= 0 ? (
           <View className="flex-row items-center justify-between">
             <Caption>
-              Step {stepIndex + 1} of {STEPS.length}
+              {t('onb.step', { index: stepIndex + 1, count: STEPS.length })}
             </Caption>
             <Pressable onPress={finish} accessibilityRole="button" hitSlop={8} className="min-h-[44px] justify-center">
-              <Caption className="font-sans-semibold text-accent-secondary">Skip setup</Caption>
+              <Caption className="font-sans-semibold text-accent-secondary">{t('onb.skip')}</Caption>
             </Pressable>
           </View>
         ) : null}
@@ -156,88 +159,99 @@ export default function OnboardingScreen() {
             <Text accessibilityRole="header" className="font-display text-[44px] leading-[46px] text-text-primary">
               F-AI
             </Text>
-            <Heading>Know what you can spend, every day.</Heading>
+            <Heading>{t('onb.tagline')}</Heading>
             {[
-              ['wallet-outline', 'Cash, mobile money and bank in one place'],
-              ['calendar-outline', 'Bills and debts set aside before you spend'],
-              ['sparkles-outline', 'A copilot that only uses your real numbers'],
+              ['wallet-outline', t('onb.point1')],
+              ['calendar-outline', t('onb.point2')],
+              ['sparkles-outline', t('onb.point3')],
             ].map(([icon, text]) => (
               <View key={text} className="flex-row items-center gap-md">
                 <Ionicons name={icon as 'wallet-outline'} size={22} color={colors.accent} />
                 <Body className="flex-1">{text}</Body>
               </View>
             ))}
-            <Caption>Your data stays on this phone. Setup takes about a minute.</Caption>
-            <Button label="Get started" onPress={() => next('currency')} />
+            <Caption>{t('onb.privacy')}</Caption>
+            <View className="flex-row gap-sm">
+              {(['en', 'fr'] as const).map((option) => (
+                <Pressable
+                  key={option}
+                  onPress={() => setLanguage(option)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: language === option }}
+                  className={language === option ? 'flex-1 items-center rounded-sm border border-accent bg-accent-muted py-sm' : 'flex-1 items-center rounded-sm border border-border bg-surface py-sm'}
+                >
+                  <Caption className={language === option ? 'text-accent-secondary' : undefined}>{t(`settings.language.${option}`)}</Caption>
+                </Pressable>
+              ))}
+            </View>
+            <Button label={t('onb.start')} onPress={() => next('currency')} />
             <Pressable onPress={finish} accessibilityRole="button" className="items-center py-sm">
-              <Caption className="font-sans-semibold text-accent-secondary">Skip setup</Caption>
+              <Caption className="font-sans-semibold text-accent-secondary">{t('onb.skip')}</Caption>
             </Pressable>
           </View>
         ) : null}
 
         {step === 'currency' ? (
           <View className="gap-lg">
-            <Heading>Which currency do you use?</Heading>
+            <Heading>{t('onb.currencyTitle')}</Heading>
             <ChipGroup<CurrencyCode>
               options={Object.values(CURRENCIES).map((c) => ({ id: c.code, label: `${c.code} · ${c.symbol}` }))}
               selectedId={defaultCurrency}
               onSelect={setDefaultCurrency}
             />
-            <Caption>You can change this later in Settings.</Caption>
-            <Button label="Continue" onPress={() => next('accounts')} />
+            <Caption>{t('onb.changeLater')}</Caption>
+            <Button label={t('onb.continue')} onPress={() => next('accounts')} />
           </View>
         ) : null}
 
         {step === 'accounts' ? (
           <View className="gap-lg">
-            <Heading>Where is your money right now?</Heading>
-            <BodySmall>Enter today&rsquo;s balances so F-AI starts from your real numbers. Leave a field empty for 0.</BodySmall>
+            <Heading>{t('onb.accountsTitle')}</Heading>
+            <BodySmall>{t('onb.accountsHint')}</BodySmall>
             <View className="gap-sm">
-              <Label>Cash on hand ({defaultCurrency})</Label>
-              {input(cashBalance, setCashBalance, '0', 'Cash on hand')}
+              <Label>{t('onb.cash', { currency: defaultCurrency })}</Label>
+              {input(cashBalance, setCashBalance, '0', t('onb.cashA11y'))}
             </View>
-            {toggle(useMomo, () => setUseMomo((v) => !v), 'I use mobile money')}
+            {toggle(useMomo, () => setUseMomo((v) => !v), t('onb.useMomo'))}
             {useMomo ? (
               <View className="gap-sm">
-                {input(momoName, setMomoName, 'MTN MoMo, Orange Money', 'Mobile money account name', false)}
-                {input(momoBalance, setMomoBalance, `Balance (${defaultCurrency})`, 'Mobile money balance')}
+                {input(momoName, setMomoName, t('onb.momoPlaceholder'), t('onb.momoNameA11y'), false)}
+                {input(momoBalance, setMomoBalance, t('onb.balance', { currency: defaultCurrency }), t('onb.momoBalanceA11y'))}
               </View>
             ) : null}
-            {toggle(useBank, () => setUseBank((v) => !v), 'I have a bank account')}
+            {toggle(useBank, () => setUseBank((v) => !v), t('onb.useBank'))}
             {useBank ? (
               <View className="gap-sm">
-                {input(bankName, setBankName, 'e.g. Afriland, Ecobank', 'Bank name', false)}
-                {input(bankBalance, setBankBalance, `Balance (${defaultCurrency})`, 'Bank balance')}
+                {input(bankName, setBankName, t('onb.bankPlaceholder'), t('onb.bankNameA11y'), false)}
+                {input(bankBalance, setBankBalance, t('onb.balance', { currency: defaultCurrency }), t('onb.bankBalanceA11y'))}
               </View>
             ) : null}
             {error ? <Caption className="text-danger">{error}</Caption> : null}
-            <Button label={isSaving ? 'Saving…' : 'Continue'} onPress={saveAccounts} disabled={isSaving} />
+            <Button label={isSaving ? t('common.saving') : t('onb.continue')} onPress={saveAccounts} disabled={isSaving} />
           </View>
         ) : null}
 
         {step === 'payday' ? (
           <View className="gap-lg">
-            <Heading>When do you get paid?</Heading>
-            <BodySmall>With a payday, Overview shows how much you can spend each day until then.</BodySmall>
+            <Heading>{t('onb.paydayTitle')}</Heading>
+            <BodySmall>{t('onb.paydayHint')}</BodySmall>
             <View className="gap-sm">
-              <Label>Usual monthly pay ({defaultCurrency})</Label>
-              {input(salary, setSalary, '0', 'Usual monthly pay')}
+              <Label>{t('onb.pay', { currency: defaultCurrency })}</Label>
+              {input(salary, setSalary, '0', t('onb.payA11y'))}
             </View>
-            <DateField label="Next payday" value={payday} onChange={setPayday} minimumDate={new Date()} />
+            <DateField label={t('onb.nextPayday')} value={payday} onChange={setPayday} minimumDate={new Date()} />
             {error ? <Caption className="text-danger">{error}</Caption> : null}
-            <Button label={isSaving ? 'Saving…' : 'Continue'} onPress={savePayday} disabled={isSaving} />
-            <Button label="Skip" variant="secondary" onPress={() => next('budget')} />
+            <Button label={isSaving ? t('common.saving') : t('onb.continue')} onPress={savePayday} disabled={isSaving} />
+            <Button label={t('onb.skipStep')} variant="secondary" onPress={() => next('budget')} />
           </View>
         ) : null}
 
         {step === 'budget' ? (
           <View className="gap-lg">
-            <Heading>Start a budget for this month?</Heading>
-            <BodySmall>
-              Each spending category starts with a limit you can change any time on the Budgets tab. Alerts tell you when a category goes over.
-            </BodySmall>
-            <Button label={isSaving ? 'Creating…' : 'Create my budget'} onPress={createBudget} disabled={isSaving} />
-            <Button label="Not now" variant="secondary" onPress={() => next('done')} />
+            <Heading>{t('onb.budgetTitle')}</Heading>
+            <BodySmall>{t('onb.budgetHint')}</BodySmall>
+            <Button label={isSaving ? t('budgets.creating') : t('onb.createBudget')} onPress={createBudget} disabled={isSaving} />
+            <Button label={t('onb.notNow')} variant="secondary" onPress={() => next('done')} />
           </View>
         ) : null}
 
@@ -246,9 +260,9 @@ export default function OnboardingScreen() {
             <View className="h-20 w-20 items-center justify-center rounded-full bg-success-muted">
               <Ionicons name="checkmark" size={36} color={colors.success} />
             </View>
-            <Heading>You&rsquo;re set up</Heading>
-            <BodySmall>Add transactions as you spend, or import them from your mobile money SMS on the Transactions tab.</BodySmall>
-            <Button label="Go to Overview" onPress={finish} />
+            <Heading>{t('onb.doneTitle')}</Heading>
+            <BodySmall>{t('onb.doneHint')}</BodySmall>
+            <Button label={t('common.goToOverview')} onPress={finish} />
           </View>
         ) : null}
     </FormScrollView>

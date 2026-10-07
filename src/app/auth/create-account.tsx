@@ -5,9 +5,11 @@ import { Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useThemeColors } from '@/constants/theme';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 export default function CreateAccountScreen() {
   const colors = useThemeColors();
+  const { t } = useT();
   const { signUp, error } = useAuthStore();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,18 +31,18 @@ export default function CreateAccountScreen() {
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <View className="gap-sm">
-        <Label>Name (optional)</Label>
+        <Label>{t('auth.nameOptional')}</Label>
         <TextInput
           value={displayName}
           onChangeText={setDisplayName}
-          placeholder="Your name"
+          placeholder={t('auth.namePlaceholder')}
           placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
 
       <View className="gap-sm">
-        <Label>Email</Label>
+        <Label>{t('auth.email')}</Label>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -54,13 +56,13 @@ export default function CreateAccountScreen() {
       </View>
 
       <View className="gap-sm">
-        <Label>Password</Label>
+        <Label>{t('auth.password')}</Label>
         <TextInput
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="new-password"
-          placeholder="At least 6 characters"
+          placeholder={t('auth.passwordPlaceholder')}
           placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
@@ -69,7 +71,7 @@ export default function CreateAccountScreen() {
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
       <Button
-        label={isSubmitting ? 'Creating account…' : 'Create account'}
+        label={isSubmitting ? t('auth.creating') : t('auth.createAccount')}
         onPress={handleSubmit}
         disabled={isSubmitting || !email || password.length < 6}
       />

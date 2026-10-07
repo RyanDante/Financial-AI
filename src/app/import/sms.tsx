@@ -17,6 +17,7 @@ import { formatMoney } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { NewTransaction, Transaction } from '@/types/finance';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { categoryLabel, getLocale, t as translate, useT, type MessageKey } from '@/i18n';
 
 type Direction = 'expense' | 'income';
 /** Who read the message: the offline rules, the AI from text, or the AI from a screenshot. */
@@ -34,7 +35,13 @@ interface Draft {
   readBy: ReadBy;
 }
 
-const KIND_LABELS: Record<MomoKind, string> = { received: 'Received', sent: 'Sent', payment: 'Payment', withdrawal: 'Cash out', deposit: 'Cash in' };
+const KIND_LABELS: Record<MomoKind, MessageKey> = {
+  received: 'sms.kind.received',
+  sent: 'sms.kind.sent',
+  payment: 'sms.kind.payment',
+  withdrawal: 'sms.kind.withdrawal',
+  deposit: 'sms.kind.deposit',
+};
 const INCOME_KINDS: MomoKind[] = ['received', 'deposit'];
 /** MTN MoMo and Orange Money messages are always in FCFA, whatever the app currency. */
 const SMS_CURRENCY: CurrencyCode = 'XAF';
@@ -53,6 +60,7 @@ const SMS_CURRENCY: CurrencyCode = 'XAF';
  */
 export default function ImportSmsScreen() {
   const colors = useThemeColors();
+  const { t, tn } = useT();
   const { accounts, categories, loadAll } = useFinanceStore();
   const params = useLocalSearchParams<{ text?: string; image?: string }>();
   const [paste, setPaste] = useState(params.text ?? '');
@@ -96,17 +104,17 @@ export default function ImportSmsScreen() {
   const readWithAI = async (input: { text?: string; image?: PickedFile }) => {
     if (!aiClient) return;
     setAiError(null);
-    setAiBusy(input.image ? 'Reading the screenshot…' : 'Reading your messages…');
+    setAiBusy(input.image ? t('sms.readingScreenshot') : t('sms.readingMessages'));
     try {
       const image = input.image ? await prepareImageForAI(input.image) : undefined;
       const results = await extractMomoWithAI(aiClient, { text: input.text, image });
-      if (results.length === 0) setAiError('No mobile-money transaction was found.');
+      if (results.length === 0) setAiError(t('sms.noneFound'));
       setDrafts(results.map((result, i) => toDraft(result.parsed, i, result.fromImage ? 'image' : 'ai')));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       if (__DEV__) console.warn('[sms] AI read failed', error);
       const reason = error instanceof Error ? error.message : 'unknown error';
-      setAiError(`The AI couldn't read this (${reason}). Check your connection, or use "Read messages".`);
+      setAiError(t('sms.aiFailed', { reason }));
     } finally {
       setAiBusy(null);
     }
@@ -148,29 +156,29 @@ export default function ImportSmsScreen() {
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <View className="gap-sm">
-        <Label>Paste your MoMo or Orange Money messages</Label>
+        <Label>{t('sms.pasteLabel')}</Label>
         <TextInput
           value={paste}
           onChangeText={setPaste}
           multiline
           textAlignVertical="top"
-          placeholder={'e.g. "You have transferred 15,000 FCFA to …"\n\nLeave a blank line between messages.'}
+          placeholder={t('sms.placeholder')}
           placeholderTextColor={colors['text-muted']}
-          accessibilityLabel="Pasted SMS messages"
+          accessibilityLabel={t('sms.pasteA11y')}
           className="min-h-[120px] rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
         <Caption>
           {aiClient
-            ? `"Read messages" works offline on this phone. "Read with AI" and screenshots are sent to ${providerLabel()} to be read.`
-            : 'Messages stay on this phone. Copy them from your SMS app, then paste here.'}
+            ? t('sms.aiNote', { provider: providerLabel() })
+            : t('sms.offlineNote')}
         </Caption>
         <View className="flex-row gap-sm">
           <View className="flex-1">
-            <Button label="Read messages" variant="secondary" onPress={() => readWithRules(paste)} disabled={!paste.trim() || !!aiBusy} />
+            <Button label={t('sms.read')} variant="secondary" onPress={() => readWithRules(paste)} disabled={!paste.trim() || !!aiBusy} />
           </View>
           {aiClient ? (
             <View className="flex-1">
-              <Button label="Read with AI" variant="secondary" onPress={() => readWithAI({ text: paste })} disabled={!paste.trim() || !!aiBusy} />
+              <Button label={t('sms.readAI')} variant="secondary" onPress={() => readWithAI({ text: paste })} disabled={!paste.trim() || !!aiBusy} />
             </View>
           ) : null}
         </View>
@@ -182,7 +190,7 @@ export default function ImportSmsScreen() {
             className="min-h-[44px] flex-row items-center justify-center gap-sm rounded-md border border-dashed border-border-strong px-md"
           >
             <Ionicons name="image-outline" size={18} color={colors['text-primary']} />
-            <BodySmall>Scan a screenshot of your SMS</BodySmall>
+            <BodySmall>{t('sms.scan')}</BodySmall>
           </Pressable>
         ) : null}
         {aiBusy ? (
@@ -208,7 +216,7 @@ export default function ImportSmsScreen() {
 
       {drafts.length > 0 ? (
         <Button
-          label={isSaving ? 'Saving…' : `Save ${selected.length} ${selected.length === 1 ? 'transaction' : 'transactions'}`}
+          label={isSaving ? t('common.saving') : tn('sms.save', selected.length)}
           onPress={save}
           disabled={isSaving || selected.length === 0}
         />
@@ -233,6 +241,7 @@ function DraftCard({
   onChange: (patch: Partial<Draft>) => void;
 }) {
   const colors = useThemeColors();
+  const { t } = useT();
   const { fields, ok, confidence } = draft.parsed;
   const account = accounts.find((a) => a.id === draft.accountId);
   const isWithdrawal = fields.kind === 'withdrawal';
@@ -242,10 +251,10 @@ function DraftCard({
   if (!ok) {
     return (
       <Card className="gap-xs">
-        <Badge label="Not recognised" tone="warning" />
+        <Badge label={t('sms.notRecognised')} tone="warning" />
         <BodySmall numberOfLines={3}>{draft.parsed.raw}</BodySmall>
         <Caption>
-          {draft.readBy === 'rules' ? 'No amount in FCFA was found in this message, so it will be skipped.' : "The amount couldn't be confirmed in this message, so it will be skipped."}
+          {draft.readBy === 'rules' ? t('sms.noAmount') : t('sms.amountUnconfirmed')}
         </Caption>
       </Card>
     );
@@ -256,24 +265,24 @@ function DraftCard({
       <View className="flex-row items-start justify-between gap-md">
         <View className="flex-1 gap-xs">
           <View className="flex-row flex-wrap gap-xs">
-            <Badge label={fields.kind ? KIND_LABELS[fields.kind] : 'Type unclear'} tone={fields.kind ? 'accent' : 'warning'} />
-            {draft.readBy === 'ai' ? <Badge label="Read by AI" tone="neutral" /> : null}
-            {draft.readBy === 'image' ? <Badge label="From screenshot: check the amount" tone="warning" /> : null}
-            {draft.duplicate ? <Badge label="Already imported" tone="neutral" /> : null}
-            {confidence === 'low' ? <Badge label="Check details" tone="warning" /> : null}
+            <Badge label={fields.kind ? t(KIND_LABELS[fields.kind]) : t('sms.typeUnclear')} tone={fields.kind ? 'accent' : 'warning'} />
+            {draft.readBy === 'ai' ? <Badge label={t('sms.readByAI')} tone="neutral" /> : null}
+            {draft.readBy === 'image' ? <Badge label={t('sms.fromScreenshot')} tone="warning" /> : null}
+            {draft.duplicate ? <Badge label={t('sms.alreadyImported')} tone="neutral" /> : null}
+            {confidence === 'low' ? <Badge label={t('sms.checkDetails')} tone="warning" /> : null}
           </View>
           <AmountText valueMinor={fields.amount ?? 0} currency={SMS_CURRENCY} size="md" tone={draft.direction === 'income' ? 'success' : 'primary'} />
           {fields.counterparty ? <Body numberOfLines={1}>{fields.counterparty}</Body> : null}
           <Caption>
-            {fields.occurredAt ? new Date(fields.occurredAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'No date found: today will be used'}
-            {fields.reference ? ` · Ref ${fields.reference}` : ''}
+            {fields.occurredAt ? new Date(fields.occurredAt).toLocaleString(getLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('sms.noDate')}
+            {fields.reference ? t('sms.ref', { ref: fields.reference }) : ''}
           </Caption>
         </View>
         <Pressable
           onPress={() => onChange({ include: !draft.include })}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: draft.include }}
-          accessibilityLabel="Import this message"
+          accessibilityLabel={t('sms.importA11y')}
           hitSlop={8}
           className="h-11 w-11 items-center justify-center"
         >
@@ -284,12 +293,12 @@ function DraftCard({
       {draft.include ? (
         <>
           {isWithdrawal ? (
-            <Caption>{cashAccountName ? `Recorded as a transfer from ${account?.name ?? 'MoMo'} to ${cashAccountName}.` : 'Recorded as an expense. Add a Cash account to record cash-outs as transfers.'}</Caption>
+            <Caption>{cashAccountName ? t('sms.transferNote', { from: account?.name ?? 'MoMo', to: cashAccountName }) : t('sms.expenseNote')}</Caption>
           ) : (
             <ChipGroup<Direction>
               options={[
-                { id: 'expense', label: 'Money out' },
-                { id: 'income', label: 'Money in' },
+                { id: 'expense', label: t('sms.moneyOut') },
+                { id: 'income', label: t('sms.moneyIn') },
               ]}
               selectedId={draft.direction}
               onSelect={(direction) => onChange({ direction, categoryId: null })}
@@ -298,15 +307,15 @@ function DraftCard({
 
           {accounts.length > 1 ? (
             <View className="gap-xs">
-              <Caption>Account</Caption>
+              <Caption>{t('sms.account')}</Caption>
               <ChipGroup options={accounts.map((a) => ({ id: a.id, label: a.name }))} selectedId={draft.accountId} onSelect={(accountId) => onChange({ accountId })} />
             </View>
           ) : null}
 
           {!isWithdrawal || !cashAccountName ? (
             <View className="gap-xs">
-              <Caption>Category</Caption>
-              <ChipGroup options={relevantCategories.map((c) => ({ id: c.id, label: c.name }))} selectedId={draft.categoryId} onSelect={(categoryId) => onChange({ categoryId })} />
+              <Caption>{t('sms.category')}</Caption>
+              <ChipGroup options={relevantCategories.map((c) => ({ id: c.id, label: categoryLabel(c.name) }))} selectedId={draft.categoryId} onSelect={(categoryId) => onChange({ categoryId })} />
             </View>
           ) : null}
 
@@ -318,13 +327,13 @@ function DraftCard({
               className="min-h-[44px] flex-row items-center gap-sm"
             >
               <Ionicons name={draft.recordFee ? 'checkbox' : 'square-outline'} size={20} color={draft.recordFee ? colors.accent : colors['text-muted']} />
-              <BodySmall>Also record the {formatMoney(fields.fee ?? 0, SMS_CURRENCY)} fee as an expense</BodySmall>
+              <BodySmall>{t('sms.recordFee', { amount: formatMoney(fields.fee ?? 0, SMS_CURRENCY) })}</BodySmall>
             </Pressable>
           ) : null}
 
           {fields.balance !== null && appBalance !== null && account?.currency === SMS_CURRENCY && fields.balance !== appBalance ? (
             <Caption className="text-warning">
-              The SMS says your balance is {formatMoney(fields.balance, SMS_CURRENCY)}; F-AI shows {formatMoney(appBalance, SMS_CURRENCY)} for {account.name} before this import.
+              {t('sms.balanceMismatch', { sms: formatMoney(fields.balance, SMS_CURRENCY), app: formatMoney(appBalance, SMS_CURRENCY), account: account.name })}
             </Caption>
           ) : null}
         </>
@@ -343,12 +352,12 @@ function toTransactions(draft: Draft, cashAccountId: string | null, feeCategoryI
 
   const main: NewTransaction =
     fields.kind === 'withdrawal' && cashAccountId
-      ? { ...base, type: 'transfer', transferAccountId: cashAccountId, categoryId: null, merchant: null, description: 'Cash out' }
+      ? { ...base, type: 'transfer', transferAccountId: cashAccountId, categoryId: null, merchant: null, description: translate('sms.cashOut') }
       : { ...base, type: draft.direction, transferAccountId: null, categoryId: draft.categoryId, merchant: fields.counterparty };
 
   const fee: NewTransaction[] =
     draft.recordFee && (fields.fee ?? 0) > 0
-      ? [{ ...base, amountMinor: fields.fee ?? 0, type: 'expense', transferAccountId: null, categoryId: feeCategoryId, merchant: 'Mobile money fee', notes: notes ? `${notes} fee` : null }]
+      ? [{ ...base, amountMinor: fields.fee ?? 0, type: 'expense', transferAccountId: null, categoryId: feeCategoryId, merchant: translate('sms.fee'), notes: notes ? `${notes} fee` : null }]
       : [];
   return [main, ...fee];
 }

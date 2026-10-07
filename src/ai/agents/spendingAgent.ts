@@ -1,6 +1,7 @@
 import { formatMoney } from '@/utils/currency';
 import { currentMonthKey, extractNamedMonthKey, mentionsComparison, previousMonthKey } from './dateEntities';
 import { buildAgentResponse, type AgentClaim, type AgentDefinition } from './types';
+import { categoryLabel, t } from '@/i18n';
 
 export const SPENDING_AGENT_TOOLS = ['getSpending', 'getSpendingByCategory', 'getAccounts', 'calculateCashFlow'];
 
@@ -45,14 +46,14 @@ export const spendingAgent: AgentDefinition = {
 
     if (breakdown.categories.length === 0) {
       return buildAgentResponse({
-        claims: [{ kind: 'fact', text: `No expenses recorded for ${month} yet.` }],
+        claims: [{ kind: 'fact', text: t('ag.spending.none', { month }) }],
       });
     }
 
     const totalMinor = breakdown.categories.reduce((sum, c) => sum + c.totalMinor, 0);
     const top = breakdown.categories[0]; // calculateSpendingByCategory already sorts descending
 
-    const claims: AgentClaim[] = [{ kind: 'fact', text: `You spent ${formatMoney(totalMinor, context.currency)} in ${month}.` }];
+    const claims: AgentClaim[] = [{ kind: 'fact', text: t('ag.spending.total', { amount: formatMoney(totalMinor, context.currency), month }) }];
 
     // If the user named one of the actual categories we got back, call it
     // out specifically rather than only giving the overall top category.
@@ -60,19 +61,19 @@ export const spendingAgent: AgentDefinition = {
     if (namedCategory && namedCategory.categoryId !== top.categoryId) {
       claims.push({
         kind: 'fact',
-        text: `Of that, ${formatMoney(namedCategory.totalMinor, context.currency)} (${namedCategory.percentage.toFixed(0)}%) was on ${namedCategory.categoryName}.`,
+        text: t('ag.spending.named', { amount: formatMoney(namedCategory.totalMinor, context.currency), percent: namedCategory.percentage.toFixed(0), category: categoryLabel(namedCategory.categoryName) }),
       });
     }
 
     claims.push({
       kind: 'fact',
-      text: `Your top category was ${top.categoryName} at ${formatMoney(top.totalMinor, context.currency)} (${top.percentage.toFixed(0)}% of spending).`,
+      text: t('ag.spending.top', { category: categoryLabel(top.categoryName), amount: formatMoney(top.totalMinor, context.currency), percent: top.percentage.toFixed(0) }),
     });
 
     const secondAndThird = breakdown.categories.slice(1, 3);
     if (secondAndThird.length > 0) {
-      const list = secondAndThird.map((c) => `${c.categoryName} (${formatMoney(c.totalMinor, context.currency)})`).join(', then ');
-      claims.push({ kind: 'fact', text: `Next were ${list}.` });
+      const list = secondAndThird.map((c) => `${categoryLabel(c.categoryName)} (${formatMoney(c.totalMinor, context.currency)})`).join(t('ag.spending.then'));
+      claims.push({ kind: 'fact', text: t('ag.spending.next', { list }) });
     }
 
     if (mentionsComparison(request.text)) {
@@ -80,19 +81,19 @@ export const spendingAgent: AgentDefinition = {
       const previous = (await tools.execute('getSpending', { month: prevMonth })) as SpendingTotalResult;
       if (previous.totalSpentMinor > 0) {
         const changePercent = ((totalMinor - previous.totalSpentMinor) / previous.totalSpentMinor) * 100;
-        const direction = changePercent >= 0 ? 'up' : 'down';
+        const direction = changePercent >= 0 ? t('ag.spending.up') : t('ag.spending.down');
         claims.push({
           kind: 'calculation',
-          text: `That's ${direction} ${Math.abs(changePercent).toFixed(0)}% compared to ${prevMonth} (${formatMoney(previous.totalSpentMinor, context.currency)}).`,
+          text: t('ag.spending.change', { direction, percent: Math.abs(changePercent).toFixed(0), month: prevMonth, amount: formatMoney(previous.totalSpentMinor, context.currency) }),
         });
       } else {
-        claims.push({ kind: 'fact', text: `No spending was recorded for ${prevMonth} to compare against.` });
+        claims.push({ kind: 'fact', text: t('ag.spending.noPrevious', { month: prevMonth }) });
       }
     }
 
     return buildAgentResponse({
       claims,
-      followUpSuggestions: mentionsComparison(request.text) ? [] : ['Want me to compare this with last month?'],
+      followUpSuggestions: mentionsComparison(request.text) ? [] : [t('ag.spending.followUp')],
       metadata: { month, totalMinor },
     });
   },

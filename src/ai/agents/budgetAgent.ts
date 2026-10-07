@@ -1,6 +1,7 @@
 import { formatMoney } from '@/utils/currency';
 import { currentMonthKey, extractNamedMonthKey } from './dateEntities';
 import { buildAgentResponse, type AgentClaim, type AgentDefinition } from './types';
+import { categoryLabel, t } from '@/i18n';
 
 export const BUDGET_AGENT_TOOLS = ['getBudget', 'getBudgetStatus', 'getSpending', 'getSpendingByCategory'];
 
@@ -43,14 +44,14 @@ export const budgetAgent: AgentDefinition = {
 
     if (!status.budget) {
       return buildAgentResponse({
-        claims: [{ kind: 'fact', text: `No budget has been set for ${month} yet.` }],
-        followUpSuggestions: ['Want to set up a budget for this month?'],
+        claims: [{ kind: 'fact', text: t('ag.budget.none', { month }) }],
+        followUpSuggestions: [t('ag.budget.setUp')],
       });
     }
 
     if (status.categories.length === 0) {
       return buildAgentResponse({
-        claims: [{ kind: 'fact', text: `Your ${month} budget doesn't have any category limits set yet.` }],
+        claims: [{ kind: 'fact', text: t('ag.budget.noLimits', { month }) }],
       });
     }
 
@@ -61,13 +62,13 @@ export const budgetAgent: AgentDefinition = {
     if (namedCategory) {
       claims.push({
         kind: 'fact',
-        text: `You've spent ${formatMoney(namedCategory.spentMinor, context.currency)} of your ${formatMoney(namedCategory.limitMinor, context.currency)} ${namedCategory.categoryName} budget.`,
+        text: t('ag.budget.namedSpent', { spent: formatMoney(namedCategory.spentMinor, context.currency), limit: formatMoney(namedCategory.limitMinor, context.currency), category: categoryLabel(namedCategory.categoryName) }),
       });
       claims.push({
         kind: 'calculation',
         text: namedCategory.isOverBudget
-          ? `That's ${formatMoney(Math.abs(namedCategory.remainingMinor), context.currency)} over the limit.`
-          : `${formatMoney(namedCategory.remainingMinor, context.currency)} remaining (${namedCategory.percentUsed.toFixed(0)}% used).`,
+          ? t('ag.budget.namedOver', { amount: formatMoney(Math.abs(namedCategory.remainingMinor), context.currency) })
+          : t('ag.budget.remaining', { amount: formatMoney(namedCategory.remainingMinor, context.currency), percent: namedCategory.percentUsed.toFixed(0) }),
       });
     } else {
       const totalLimitMinor = status.categories.reduce((sum, c) => sum + c.limitMinor, 0);
@@ -76,27 +77,27 @@ export const budgetAgent: AgentDefinition = {
 
       claims.push({
         kind: 'fact',
-        text: `You've spent ${formatMoney(totalSpentMinor, context.currency)} of your ${formatMoney(totalLimitMinor, context.currency)} budget for ${month}.`,
+        text: t('ag.budget.totalSpent', { spent: formatMoney(totalSpentMinor, context.currency), limit: formatMoney(totalLimitMinor, context.currency), month }),
       });
       claims.push({
         kind: 'calculation',
         text:
           totalRemainingMinor >= 0
-            ? `${formatMoney(totalRemainingMinor, context.currency)} remaining (${((totalSpentMinor / totalLimitMinor) * 100).toFixed(0)}% used).`
-            : `You're ${formatMoney(Math.abs(totalRemainingMinor), context.currency)} over budget overall.`,
+            ? t('ag.budget.remaining', { amount: formatMoney(totalRemainingMinor, context.currency), percent: ((totalSpentMinor / totalLimitMinor) * 100).toFixed(0) })
+            : t('ag.budget.totalOver', { amount: formatMoney(Math.abs(totalRemainingMinor), context.currency) }),
       });
     }
 
     const overBudget = status.categories.filter((c) => c.isOverBudget);
     if (overBudget.length > 0) {
-      claims.push({ kind: 'fact', text: `Over budget: ${overBudget.map((c) => c.categoryName).join(', ')}.` });
+      claims.push({ kind: 'fact', text: t('ag.budget.overList', { list: overBudget.map((c) => categoryLabel(c.categoryName)).join(', ') }) });
     }
 
     const nearLimit = status.categories.filter((c) => !c.isOverBudget && c.percentUsed >= NEAR_LIMIT_THRESHOLD_PERCENT);
     if (nearLimit.length > 0) {
       claims.push({
         kind: 'fact',
-        text: `Close to their limit: ${nearLimit.map((c) => `${c.categoryName} (${c.percentUsed.toFixed(0)}%)`).join(', ')}.`,
+        text: t('ag.budget.nearList', { list: nearLimit.map((c) => `${categoryLabel(c.categoryName)} (${c.percentUsed.toFixed(0)}%)`).join(', ') }),
       });
     }
 

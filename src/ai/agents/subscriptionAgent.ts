@@ -1,5 +1,6 @@
 import { formatMoney } from '@/utils/currency';
 import { buildAgentResponse, type AgentDefinition } from './types';
+import { t } from '@/i18n';
 
 /** getBills adds recurring bills (rent, utilities) and due dates for the model path; the offline answer uses getSubscriptions only. */
 export const SUBSCRIPTION_AGENT_TOOLS = ['getSubscriptions', 'getBills'];
@@ -26,13 +27,13 @@ export const subscriptionAgent: AgentDefinition = {
     const result = (await tools.execute('getSubscriptions', {})) as SubscriptionCostResult;
 
     if (result.items.length === 0) {
-      return buildAgentResponse({ claims: [{ kind: 'fact', text: 'No active subscriptions are tracked yet.' }] });
+      return buildAgentResponse({ claims: [{ kind: 'fact', text: t('ag.subs.none') }] });
     }
 
-    const lines = result.items.slice(0, 5).map((s) => `  - ${s.name}: ${formatMoney(s.monthlyEquivalentMinor, context.currency)}/mo`);
+    const lines = result.items.slice(0, 5).map((s) => `  - ${t('ag.subs.line', { name: s.name, amount: formatMoney(s.monthlyEquivalentMinor, context.currency) })}`);
 
     return buildAgentResponse({
-      claims: [{ kind: 'fact', text: `You're spending ${formatMoney(result.monthlyTotalMinor, context.currency)}/month on subscriptions:\n${lines.join('\n')}` }],
+      claims: [{ kind: 'fact', text: t('ag.subs.total', { amount: formatMoney(result.monthlyTotalMinor, context.currency), lines: lines.join('\n') }) }],
       metadata: { monthlyTotalMinor: result.monthlyTotalMinor },
     });
   },

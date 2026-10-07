@@ -1,6 +1,7 @@
 import type { LLMClient, LLMImage, LLMToolSpec } from '@/ai/llm/types';
 import { LLMError } from '@/ai/llm/types';
 import type { MomoFields, MomoKind, MomoOperator, MomoParseResult } from './parseMomoSms';
+import { t } from '@/i18n';
 
 const TOOL_NAME = 'record_momo_messages';
 const KINDS: MomoKind[] = ['received', 'sent', 'payment', 'withdrawal', 'deposit'];
@@ -73,7 +74,7 @@ export async function extractMomoWithAI(client: LLMClient, input: { text?: strin
   });
 
   const call = response.toolCalls.find((c) => c.name === TOOL_NAME);
-  if (!call) throw new LLMError('The AI could not read these messages.', false);
+  if (!call) throw new LLMError(t('sms.aiUnreadable'), false);
   return toReadMessages(call.input.messages, input.image ? null : text);
 }
 

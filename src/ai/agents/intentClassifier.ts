@@ -13,9 +13,21 @@ const WORD_NUMBERS: Record<string, number> = {
   ten: 10,
   eleven: 11,
   twelve: 12,
+  // French
+  un: 1,
+  deux: 2,
+  trois: 3,
+  quatre: 4,
+  cinq: 5,
+  sept: 7,
+  huit: 8,
+  neuf: 9,
+  dix: 10,
+  onze: 11,
+  douze: 12,
 };
 
-/** Picks the largest amount-looking number in the text (handles "100k", "100,000", plain digits). Returns null if nothing looks like a real amount. */
+/** Picks the largest amount-looking number in the text (handles "100k", "100,000", French "100 000", plain digits). Returns null if nothing looks like a real amount. */
 export function extractAmountMajor(text: string): number | null {
   // The (?![a-z]) rejects a k/m suffix that's immediately followed by more
   // letters — without it, "6 months" parses the leading "m" of "months" as
@@ -25,7 +37,9 @@ export function extractAmountMajor(text: string): number | null {
   // there, so the lookahead passes. A \b alone can't do this — digits and
   // letters are both "word characters", so there's no boundary between the
   // "0" and "k" in "100k" either.
-  const matches = Array.from(text.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(?:(k|m)(?![a-z]))?/gi));
+  // French writes thousands with a space ("100 000"); join those groups first.
+  const joined = text.replace(/\b(\d{1,3})((?:\s\d{3})+)\b/g, (_, head: string, rest: string) => head + rest.replace(/\s/g, ''));
+  const matches = Array.from(joined.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(?:(k|m)(?![a-z]))?/gi));
   let best: number | null = null;
   for (const match of matches) {
     const raw = Number(match[1].replace(/,/g, ''));
@@ -39,12 +53,12 @@ export function extractAmountMajor(text: string): number | null {
   return best;
 }
 
-/** Handles both "6 months" and "six months". Returns null if no month count is mentioned. */
+/** Handles "6 months", "six months" and French "6 mois" / "six mois". Returns null if no month count is mentioned. */
 export function extractMonthsCount(text: string): number | null {
-  const digitMatch = text.match(/(\d+)\s*months?\b/i);
+  const digitMatch = text.match(/(\d+)\s*(?:months?|mois)\b/i);
   if (digitMatch) return Number(digitMatch[1]);
 
-  const wordMatch = text.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*months?\b/i);
+  const wordMatch = text.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|un|deux|trois|quatre|cinq|sept|huit|neuf|dix|onze|douze)\s*(?:months?|mois)\b/i);
   if (wordMatch) return WORD_NUMBERS[wordMatch[1].toLowerCase()];
 
   return null;
@@ -75,7 +89,10 @@ export function classifyIntent(text: string): AgentIntent {
   if (
     /\b(afford|purchase|buy)\b/.test(t) ||
     /\baffect\b.*\bgoal\b/.test(t) ||
-    (/\b(spend|costs?)\b/.test(t) && hasAmount)
+    (/\b(spend|costs?)\b/.test(t) && hasAmount) ||
+    // French
+    /\b(acheter|achat|achète|me permettre|me payer)\b/.test(t) ||
+    (/(dépenser|dépense|coûte|coûter)/.test(t) && hasAmount)
   ) {
     return 'purchase';
   }
@@ -86,29 +103,30 @@ export function classifyIntent(text: string): AgentIntent {
     /what happens if .*\bmonth/.test(t) ||
     /spending stays the same/.test(t) ||
     /how much will i have/.test(t) ||
-    /project.*cash\s*flow/.test(t)
+    /project.*cash\s*flow/.test(t) ||
+    /prévi|prévoi|prévoir|projection|combien j'aurai|dans \d+ mois/.test(t)
   ) {
     return 'forecast';
   }
-  if (/\bbudget\b|overspend|over\s*budget|\blimits?\b/.test(t)) {
+  if (/\bbudget\b|overspend|over\s*budget|\blimits?\b|\blimites?\b|dépassé|dépasse/.test(t)) {
     return 'budget';
   }
-  if (/\bgoal\b|saving for|save for|reach my goal|when will i reach|need to save|save more/.test(t)) {
+  if (/\bgoal\b|saving for|save for|reach my goal|when will i reach|need to save|save more|objectif|épargner|économiser/.test(t)) {
     return 'goal';
   }
-  if (/\bsubscription|recurring expense/.test(t)) {
+  if (/\bsubscription|recurring expense|abonnement/.test(t)) {
     return 'subscriptions';
   }
   // Checked before the generic spending branch so "What did I spend this
   // money on?" (asking to see the transactions themselves) doesn't get
   // swallowed by the bare \bspend\b match below.
-  if (/\btransactions?\b|analyze this|what did i spend.*\bon\b/.test(t)) {
+  if (/\btransactions?\b|analyze this|what did i spend.*\bon\b|qu'ai-je acheté/.test(t)) {
     return 'transactions';
   }
-  if (/\bspend\b|\bspending\b|\bspent\b|where.*money/.test(t)) {
+  if (/\bspend\b|\bspending\b|\bspent\b|where.*money|dépens|où va mon argent|où passe mon argent/.test(t)) {
     return 'spending';
   }
-  if (/\boverview\b|how am i doing financially|financial (summary|health|snapshot)/.test(t)) {
+  if (/\boverview\b|how am i doing financially|financial (summary|health|snapshot)|aperçu|santé financière|résumé|comment je m'en sors/.test(t)) {
     return 'general_finance';
   }
   return 'unknown';

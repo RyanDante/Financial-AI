@@ -2,6 +2,7 @@ import { formatMoney, majorToMinor } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
 import { monthsUntilNamedMonth } from './dateEntities';
 import { buildAgentResponse, type AgentClaim, type AgentDefinition } from './types';
+import { getLanguage, t } from '@/i18n';
 
 export const FORECAST_AGENT_TOOLS = ['forecastBalance', 'calculateCashFlow'];
 
@@ -41,9 +42,9 @@ function detectScenario(text: string, amountMajor: number | undefined, currency:
 }
 
 function scenarioPhrase(scenario: ForecastScenario, monthlyAdjustmentMinor: number, currency: CurrencyCode): string {
-  if (scenario === 'INCREASED_SAVING') return `you saved an extra ${formatMoney(monthlyAdjustmentMinor, currency)}/month`;
-  if (scenario === 'INCREASED_SPENDING') return `you spent an extra ${formatMoney(-monthlyAdjustmentMinor, currency)}/month`;
-  return 'your recent cash flow continues unchanged';
+  if (scenario === 'INCREASED_SAVING') return t('ag.forecast.saved', { amount: formatMoney(monthlyAdjustmentMinor, currency) });
+  if (scenario === 'INCREASED_SPENDING') return t('ag.forecast.spent', { amount: formatMoney(-monthlyAdjustmentMinor, currency) });
+  return t('ag.forecast.unchanged');
 }
 
 /**
@@ -69,9 +70,9 @@ export const forecastAgent: AgentDefinition = {
         claims: [
           {
             kind: 'fact',
-            text: `In ${cashFlow.month}, you've taken in ${formatMoney(cashFlow.incomeMinor, context.currency)} and spent ${formatMoney(cashFlow.expenseMinor, context.currency)}.`,
+            text: t('ag.forecast.cashFlow', { month: cashFlow.month, income: formatMoney(cashFlow.incomeMinor, context.currency), spent: formatMoney(cashFlow.expenseMinor, context.currency) }),
           },
-          { kind: 'calculation', text: `That's a net cash flow of ${formatMoney(cashFlow.netMinor, context.currency)} for ${cashFlow.month}.` },
+          { kind: 'calculation', text: t('ag.forecast.net', { net: formatMoney(cashFlow.netMinor, context.currency), month: cashFlow.month }) },
         ],
         metadata: { month: cashFlow.month, netMinor: cashFlow.netMinor },
       });
@@ -91,9 +92,9 @@ export const forecastAgent: AgentDefinition = {
     const claims: AgentClaim[] = [
       {
         kind: 'projection',
-        text: `If ${scenarioPhrase(scenario, monthlyAdjustmentMinor, context.currency)}, your balance in ${months} month(s) (${last.month}) would be approximately ${formatMoney(last.projectedBalanceMinor, context.currency)}.`,
+        text: t('ag.forecast.projection', { scenario: scenarioPhrase(scenario, monthlyAdjustmentMinor, context.currency), months, month: last.month, amount: formatMoney(last.projectedBalanceMinor, context.currency) }),
       },
-      { kind: 'assumption', text: result.basis },
+      { kind: 'assumption', text: getLanguage() === 'en' ? result.basis : t('ag.forecast.basis') },
     ];
 
     return buildAgentResponse({ claims, metadata: { months, scenario } });

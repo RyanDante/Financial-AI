@@ -4,9 +4,11 @@ import { Body, Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useThemeColors } from '@/constants/theme';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 export default function ForgotPasswordScreen() {
   const colors = useThemeColors();
+  const { t } = useT();
   const { resetPassword, error } = useAuthStore();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,10 +28,10 @@ export default function ForgotPasswordScreen() {
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
-      <Body className="text-text-secondary">Enter your account email and we&apos;ll send you a link to reset your password.</Body>
+      <Body className="text-text-secondary">{t('auth.resetHint')}</Body>
 
       <View className="gap-sm">
-        <Label>Email</Label>
+        <Label>{t('auth.email')}</Label>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -43,9 +45,9 @@ export default function ForgotPasswordScreen() {
       </View>
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
-      {sent ? <Caption className="text-success">Check your email for a reset link.</Caption> : null}
+      {sent ? <Caption className="text-success">{t('auth.resetSent')}</Caption> : null}
 
-      <Button label={isSubmitting ? 'Sending…' : 'Send reset link'} onPress={handleSubmit} disabled={isSubmitting || !email} />
+      <Button label={isSubmitting ? t('auth.sending') : t('auth.sendReset')} onPress={handleSubmit} disabled={isSubmitting || !email} />
     </FormScrollView>
   );
 }

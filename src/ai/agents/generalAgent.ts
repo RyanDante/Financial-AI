@@ -1,5 +1,6 @@
 import { formatMoney } from '@/utils/currency';
 import { buildAgentResponse, type AgentDefinition } from './types';
+import { t } from '@/i18n';
 
 /** Broad, read-only view of the user's finances for questions no specialist owns ("How am I doing?", "What should I watch out for?"). */
 export const GENERAL_AGENT_TOOLS = [
@@ -48,17 +49,17 @@ export const generalAgent: AgentDefinition = {
 
     return buildAgentResponse({
       claims: [
-        { kind: 'fact', text: `Your total balance is ${formatMoney(balance.totalBalanceMinor, context.currency)}.` },
+        { kind: 'fact', text: t('ag.general.balance', { amount: formatMoney(balance.totalBalanceMinor, context.currency) }) },
         {
           kind: 'fact',
-          text: `This month you've received ${formatMoney(cashFlow.incomeMinor, context.currency)} and spent ${formatMoney(cashFlow.expenseMinor, context.currency)}.`,
+          text: t('ag.general.month', { income: formatMoney(cashFlow.incomeMinor, context.currency), spent: formatMoney(cashFlow.expenseMinor, context.currency) }),
         },
         {
           kind: 'calculation',
-          text: `That leaves a net of ${formatMoney(cashFlow.netMinor, context.currency, { forceSign: true })} for the month so far.`,
+          text: t('ag.general.net', { net: formatMoney(cashFlow.netMinor, context.currency, { forceSign: true }) }),
         },
       ],
-      followUpSuggestions: ['Where is my money going?', 'Am I on track with my budget?'],
+      followUpSuggestions: [t('ag.general.followUp1'), t('ag.general.followUp2')],
     });
   },
 };
