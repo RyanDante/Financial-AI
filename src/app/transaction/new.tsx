@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { aiClient, providerLabel } from '@/ai';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { attachFileToEntity, pickImageFromLibrary, takePhoto, type PickedFile } from '@/features/attachments/attachments.service';
+import { prepareImageForAI } from '@/features/images/prepareForAI';
+import { scanReceipt } from '@/features/receipts/scanReceipt';
 import { Body, Button, Caption, Label } from '@/components/ui';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import { DateField } from '@/components/ui/DateField';
@@ -40,6 +46,12 @@ export default function NewTransactionScreen() {
   const [merchant, setMerchant] = useState(prefillMerchant ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const authUser = useAuthStore((s) => s.user);
+  // Receipt scanning (new expenses only, with an AI provider set up).
+  const [receipt, setReceipt] = useState<PickedFile | null>(null);
+  const [attachReceipt, setAttachReceipt] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanNote, setScanNote] = useState<{ tone: 'info' | 'warning' | 'danger'; text: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -68,6 +80,35 @@ export default function NewTransactionScreen() {
   const isTransfer = type === 'transfer';
   const types: TransactionType[] = accounts.length > 1 || isTransfer ? ['expense', 'income', 'transfer'] : ['expense', 'income'];
   const accountName = (accountIdToFind: string | null) => accounts.find((a) => a.id === accountIdToFind)?.name ?? 'account';
+  const canScan = !isEditing && !!aiClient && type === 'expense';
+
+  /** Reads a receipt photo and fills the form; the user checks everything before saving. */
+  const scan = async (pick: () => Promise<PickedFile | null>) => {
+    if (!aiClient) return;
+    const file = await pick();
+    if (!file) return;
+    setIsScanning(true);
+    setScanNote(null);
+    try {
+      const result = await scanReceipt(aiClient, await prepareImageForAI(file), relevantCategories);
+      setReceipt(file);
+      setAmountInput(String(result.total));
+      if (result.merchant) setMerchant(result.merchant);
+      if (result.categoryId) setCategoryId(result.categoryId);
+      if (result.date) setOccurredAt(new Date(result.date));
+      setScanNote(
+        result.currency && result.currency !== currency
+          ? { tone: 'warning', text: `This receipt is in ${result.currency}, but this transaction is in ${currency}. Convert the amount before saving.` }
+          : { tone: 'info', text: 'Filled in from your receipt. Check the amount, category and date before saving.' },
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (scanError) {
+      if (__DEV__) console.warn('[receipt] scan failed', scanError);
+      setScanNote({ tone: 'danger', text: `${scanError instanceof Error ? scanError.message : 'The receipt could not be read.'} You can still enter it by hand.` });
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   const handleSave = async () => {
     const amountMinor = parseMoneyInput(amountInput, currency);
@@ -98,7 +139,11 @@ export default function NewTransactionScreen() {
     if (isEditing && id) {
       await updateTransaction(id, fields);
     } else {
-      await addTransaction({ ...fields, currency, notes: null, source: 'manual' });
+      const saved = await addTransaction({ ...fields, currency, notes: null, source: 'manual' });
+      if (receipt && attachReceipt && !isTransfer) {
+        // Best effort: the transaction is saved even if the photo can't be attached.
+        await attachFileToEntity('transaction', saved.id, receipt, authUser?.uid ?? null).catch(() => {});
+      }
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
@@ -132,6 +177,40 @@ export default function NewTransactionScreen() {
           </Pressable>
         ))}
       </View>
+
+      {canScan ? (
+        <View className="gap-sm rounded-md border border-dashed border-border-strong p-md">
+          <View className="flex-row items-center gap-sm">
+            <Ionicons name="receipt-outline" size={20} color={colors['accent-secondary']} />
+            <Body className="flex-1">Scan a receipt</Body>
+            {isScanning ? <ActivityIndicator size="small" color={colors['accent-secondary']} /> : null}
+          </View>
+          <View className="flex-row gap-sm">
+            <View className="flex-1">
+              <Button label="Camera" variant="secondary" onPress={() => scan(takePhoto)} disabled={isScanning} />
+            </View>
+            <View className="flex-1">
+              <Button label="Photos" variant="secondary" onPress={() => scan(pickImageFromLibrary)} disabled={isScanning} />
+            </View>
+          </View>
+          {scanNote ? (
+            <Caption className={scanNote.tone === 'danger' ? 'text-danger' : scanNote.tone === 'warning' ? 'text-warning' : undefined}>{scanNote.text}</Caption>
+          ) : (
+            <Caption>The photo is sent to {providerLabel()} to read the total, shop and date.</Caption>
+          )}
+          {receipt ? (
+            <Pressable
+              onPress={() => setAttachReceipt((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: attachReceipt }}
+              className="min-h-[44px] flex-row items-center gap-sm"
+            >
+              <Ionicons name={attachReceipt ? 'checkbox' : 'square-outline'} size={20} color={attachReceipt ? colors.accent : colors['text-muted']} />
+              <Caption>Attach the receipt photo to this transaction</Caption>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       <View className="gap-sm">
         <Label>Amount ({currency})</Label>

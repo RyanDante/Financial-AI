@@ -20,7 +20,8 @@ interface FinanceState {
   upcomingObligationsMinor: number;
   reserveTargetMinor: number;
   loadAll: () => Promise<void>;
-  addTransaction: (input: NewTransaction) => Promise<void>;
+  /** Returns the saved transaction (e.g. to attach a receipt photo to it). */
+  addTransaction: (input: NewTransaction) => Promise<Transaction>;
   updateTransaction: (id: string, patch: Partial<NewTransaction>) => Promise<void>;
   /** Soft delete: sync pushes it to the cloud as a delete. */
   deleteTransaction: (id: string) => Promise<void>;
@@ -82,8 +83,9 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   addTransaction: async (input: NewTransaction) => {
-    await transactionsRepository.createTransaction(input);
+    const transaction = await transactionsRepository.createTransaction(input);
     await get().loadAll();
+    return transaction;
   },
 
   updateTransaction: async (id, patch) => {
