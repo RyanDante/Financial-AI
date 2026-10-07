@@ -1,11 +1,14 @@
-import { View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { Badge, Body, Caption } from '@/components/ui';
 import { cn } from '@/utils/cn';
 import { extractAgentName, visibleToolCalls } from '@/types/ai';
-import type { AIMessage } from '@/types/ai';
+import type { ChatMessage } from '@/store/aiStore';
 
 interface ChatBubbleProps {
-  message: AIMessage;
+  message: ChatMessage;
+  onRetry?: (messageId: string) => void;
 }
 
 /**
@@ -21,15 +24,41 @@ interface ChatBubbleProps {
  * display name and the tools it actually checked, never the regex/intent
  * logic, a raw tool schema, or anything resembling internal reasoning.
  */
-export function ChatBubble({ message }: ChatBubbleProps) {
+export function ChatBubble({ message, onRetry }: ChatBubbleProps) {
   const isUser = message.role === 'user';
+  const failed = message.status === 'failed';
+
+  const showActions = () => {
+    Haptics.selectionAsync();
+    const copy = () => Clipboard.setStringAsync(message.content);
+    const retry = failed && onRetry ? () => onRetry(message.id) : null;
+    if (Platform.OS === 'ios') {
+      const options = retry ? ['Copy', 'Send again', 'Cancel'] : ['Copy', 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: options.length - 1 }, (index) => {
+        if (index === 0) copy();
+        else if (index === 1 && retry) retry();
+      });
+      return;
+    }
+    Alert.alert('Message', undefined, [
+      { text: 'Copy', onPress: copy },
+      ...(retry ? [{ text: 'Send again', onPress: retry }] : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  };
   const lines = message.content.split('\n');
   const agentName = extractAgentName(message.toolCalls);
   const checkedTools = visibleToolCalls(message.toolCalls);
 
   return (
-    <View className={cn('mb-sm flex-row', isUser ? 'justify-end' : 'justify-start')}>
-      <View className={cn('max-w-[85%] gap-xs rounded-lg px-lg py-md', isUser ? 'bg-accent' : 'border border-border bg-surface')}>
+    <View className={cn('mb-sm', isUser ? 'items-end' : 'items-start')}>
+      <Pressable
+        onLongPress={showActions}
+        delayLongPress={350}
+        accessibilityHint="Long-press to copy"
+        className={cn('max-w-[85%] gap-xs rounded-lg px-lg py-md', isUser ? 'bg-accent' : 'border border-border bg-surface')}
+        style={{ opacity: message.status === 'sending' ? 0.7 : 1 }}
+      >
         {agentName ? <Badge label={agentName} tone="accent" className="mb-xs" /> : null}
         {lines.map((line, index) => (
           <ChatLine key={index} line={line} isUser={isUser} />
@@ -37,7 +66,12 @@ export function ChatBubble({ message }: ChatBubbleProps) {
         {checkedTools.length > 0 ? (
           <Caption className={isUser ? 'text-on-accent/70' : undefined}>Checked: {checkedTools.map((tc) => tc.toolName).join(', ')}</Caption>
         ) : null}
-      </View>
+      </Pressable>
+      {failed ? (
+        <Pressable onPress={() => onRetry?.(message.id)} accessibilityRole="button" hitSlop={8} className="mt-xs min-h-[32px] justify-center">
+          <Caption className="text-danger">Not sent · Tap to retry</Caption>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

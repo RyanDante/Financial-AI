@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { Body, Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useThemeColors } from '@/constants/theme';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 export default function ForgotPasswordScreen() {
   const colors = useThemeColors();
@@ -24,7 +25,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <Body className="text-text-secondary">Enter your account email and we&apos;ll send you a link to reset your password.</Body>
 
       <View className="gap-sm">
@@ -45,6 +46,6 @@ export default function ForgotPasswordScreen() {
       {sent ? <Caption className="text-success">Check your email for a reset link.</Caption> : null}
 
       <Button label={isSubmitting ? 'Sending…' : 'Send reset link'} onPress={handleSubmit} disabled={isSubmitting || !email} />
-    </ScrollView>
+    </FormScrollView>
   );
 }

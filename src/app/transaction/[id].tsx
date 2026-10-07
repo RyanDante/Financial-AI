@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +13,7 @@ import { retryUpload } from '@/services/cloud/storage';
 import type { FileUpload } from '@/types/files';
 import type { Transaction } from '@/types/finance';
 import { useThemeColors } from '@/constants/theme';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 const OWNER_ENTITY_TYPE = 'transaction';
 
@@ -98,7 +99,7 @@ export default function TransactionDetailScreen() {
   const toAccount = accounts.find((a) => a.id === transaction.transferAccountId);
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <View className="items-center gap-xs py-md">
         <AmountText
           valueMinor={isIncome || isTransfer ? transaction.amountMinor : -transaction.amountMinor}
@@ -156,7 +157,7 @@ export default function TransactionDetailScreen() {
           onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
         />
       </View>
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

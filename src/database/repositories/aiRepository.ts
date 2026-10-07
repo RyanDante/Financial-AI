@@ -85,3 +85,15 @@ export async function addMessage(
   await db.runAsync('UPDATE ai_conversations SET updated_at = ? WHERE id = ?', now, conversationId);
   return { id, conversationId, role, content, toolCalls: (toolCalls as AIMessage['toolCalls']) ?? null, createdAt: now };
 }
+
+export async function updateConversationTitle(id: string, title: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('UPDATE ai_conversations SET title = ?, updated_at = ? WHERE id = ?', title, new Date().toISOString(), id);
+}
+
+/** Soft delete: the conversation and its messages disappear from the chat list. */
+export async function deleteConversation(id: string): Promise<void> {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+  await db.runAsync('UPDATE ai_conversations SET deleted_at = ?, updated_at = ? WHERE id = ?', now, now, id);
+}

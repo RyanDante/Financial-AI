@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -11,6 +11,7 @@ import { ACCOUNT_TYPES, canArchiveAccount } from '@/features/accounts/accountTyp
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { cn } from '@/utils/cn';
 import type { AccountType } from '@/types/finance';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 /**
  * Add an account, or edit one when opened with `?id=` (from Settings).
@@ -72,7 +73,7 @@ export default function EditAccountScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <Stack.Screen options={{ title: existing ? 'Edit account' : 'Add account' }} />
 
       <View className="gap-sm">
@@ -132,6 +133,6 @@ export default function EditAccountScreen() {
       {existing && !canArchiveAccount(existing, accounts) ? (
         <Caption className="text-center">This is your only account, so it can&rsquo;t be archived.</Caption>
       ) : null}
-    </ScrollView>
+    </FormScrollView>
   );
 }

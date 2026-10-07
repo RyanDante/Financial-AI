@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Body, Button, Caption, ChipGroup, Label } from '@/components/ui';
@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeColors } from '@/constants/theme';
 import { FREQUENCY_LABELS, nextOccurrence } from '@/features/bills/bills';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 type BillKind = 'bill' | 'subscription';
 type BillFrequency = 'weekly' | 'monthly' | 'yearly';
@@ -126,7 +127,7 @@ export default function NewBillScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <Stack.Screen options={{ title: isEditing ? (kind === 'subscription' ? 'Edit subscription' : 'Edit bill') : 'Add a bill' }} />
       {isLoaded ? null : <Caption>Loading…</Caption>}
       <View className={isEditing ? 'hidden' : 'gap-sm'}>
@@ -188,6 +189,6 @@ export default function NewBillScreen() {
           <Body className="text-danger">Stop tracking</Body>
         </Pressable>
       ) : null}
-    </ScrollView>
+    </FormScrollView>
   );
 }

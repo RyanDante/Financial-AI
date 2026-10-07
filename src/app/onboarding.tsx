@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -134,12 +135,11 @@ export default function OnboardingScreen() {
   );
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-background" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerClassName="flex-grow gap-lg px-lg"
-        contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: Math.max(insets.bottom, 16) + 16 }}
-        keyboardShouldPersistTaps="handled"
-      >
+    <FormScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="flex-grow gap-lg px-lg"
+      contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: Math.max(insets.bottom, 16) + 16 }}
+    >
         {stepIndex >= 0 ? (
           <View className="flex-row items-center justify-between">
             <Caption>
@@ -251,7 +251,6 @@ export default function OnboardingScreen() {
             <Button label="Go to Overview" onPress={finish} />
           </View>
         ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </FormScrollView>
   );
 }

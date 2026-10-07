@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Button, Caption, ChipGroup, Label } from '@/components/ui';
@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeColors } from '@/constants/theme';
 import { FREQUENCY_LABELS } from '@/features/bills/bills';
 import { parseMoneyInput } from '@/utils/currency';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 type IncomeFrequency = 'weekly' | 'monthly' | 'yearly';
 const FREQUENCIES: IncomeFrequency[] = ['monthly', 'weekly', 'yearly'];
@@ -47,7 +48,7 @@ export default function NewIncomeScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <View className="gap-sm">
         <Label>Name</Label>
         <TextInput
@@ -90,6 +91,6 @@ export default function NewIncomeScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
       <Button label={isSaving ? 'Saving…' : 'Save income'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
-    </ScrollView>
+    </FormScrollView>
   );
 }

@@ -8,6 +8,7 @@ import { AIRouter } from './router';
 import { aiConfig } from './config';
 import { createLLMClient } from './llm/createClient';
 import { LLMProvider } from './providers/llmProvider';
+import { conversationTitle, describeToolStep } from './chatText';
 
 export const toolRegistry = new ToolRegistry();
 registerFinancialTools(toolRegistry);
@@ -38,24 +39,47 @@ export interface SendUserMessageResult {
   assistantMessage: AIMessage;
 }
 
+export interface SendOptions {
+  /** Called with a short description each time the copilot reads data (e.g. "Reading your debts…"). */
+  onStep?: (step: string) => void;
+}
+
 /**
- * The single entry point the AI store/UI calls: persists the user's
- * message, routes to a provider, lets it call tools, and persists the
- * assistant's reply (with the tool calls it made attached) so the
- * conversation is fully reconstructable from the database alone.
+ * The single entry point the AI store/UI calls: routes the question to a
+ * provider, lets it call tools, then persists the question and the reply
+ * (with the tool calls it made attached) so the conversation is fully
+ * reconstructable from the database alone.
+ *
+ * Nothing is saved until the reply exists, so a failure leaves no
+ * half-finished exchange behind and the user can simply retry.
  */
-export async function sendUserMessage(conversationId: string, text: string): Promise<SendUserMessageResult> {
-  const userMessage = await aiRepository.addMessage(conversationId, 'user', text);
+export async function sendUserMessage(conversationId: string, text: string, options: SendOptions = {}): Promise<SendUserMessageResult> {
   const history = await aiRepository.listMessages(conversationId);
 
-  const providerMessages: AIProviderMessage[] = history
-    .filter((m): m is typeof m & { role: 'user' | 'assistant' | 'system' } => m.role !== 'tool')
-    .map((m) => ({ role: m.role, content: m.content }));
+  const providerMessages: AIProviderMessage[] = [
+    ...history
+      .filter((m): m is typeof m & { role: 'user' | 'assistant' | 'system' } => m.role !== 'tool')
+      .map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user', content: text },
+  ];
 
   const provider = aiRouter.selectProvider();
-  const result = await provider.generateReply({ messages: providerMessages, tools: toolRegistry });
+  const result = await provider.generateReply({ messages: providerMessages, tools: observeTools(toolRegistry, options.onStep) });
 
+  const userMessage = await aiRepository.addMessage(conversationId, 'user', text);
   const assistantMessage = await aiRepository.addMessage(conversationId, 'assistant', result.content, result.toolCalls);
+  if (history.length === 0) await aiRepository.updateConversationTitle(conversationId, conversationTitle(text));
 
   return { userMessage, assistantMessage };
+}
+
+/** The same registry, reporting each tool it runs. */
+function observeTools(registry: ToolRegistry, onStep?: (step: string) => void): ToolRegistry {
+  if (!onStep) return registry;
+  const observed = Object.create(registry) as ToolRegistry;
+  observed.execute = (name, input) => {
+    onStep(describeToolStep(name));
+    return registry.execute(name, input);
+  };
+  return observed;
 }

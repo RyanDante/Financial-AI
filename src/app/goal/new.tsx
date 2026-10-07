@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { useThemeColors } from '@/constants/theme';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 const DEFAULT_DEADLINE_MONTHS = 6;
 
@@ -90,7 +91,7 @@ export default function NewGoalScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <Stack.Screen options={{ title: existing ? 'Edit goal' : 'New goal' }} />
 
       <View className="gap-sm">
@@ -152,6 +153,6 @@ export default function NewGoalScreen() {
           <Body className="text-danger">Delete goal</Body>
         </Pressable>
       ) : null}
-    </ScrollView>
+    </FormScrollView>
   );
 }

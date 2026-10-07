@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Body, Button, Caption, Label } from '@/components/ui';
@@ -12,6 +12,7 @@ import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { cn } from '@/utils/cn';
 import type { Transaction, TransactionType } from '@/types/finance';
 import { useThemeColors } from '@/constants/theme';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 /**
  * Add a transaction, or edit one when opened with `?id=` (from the
@@ -112,7 +113,7 @@ export default function NewTransactionScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <Stack.Screen options={{ title: isEditing ? 'Edit transaction' : 'Add transaction' }} />
 
       <View className="flex-row gap-sm">
@@ -186,6 +187,6 @@ export default function NewTransactionScreen() {
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
       <Button label={isSaving ? 'Saving…' : 'Save transaction'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
-    </ScrollView>
+    </FormScrollView>
   );
 }

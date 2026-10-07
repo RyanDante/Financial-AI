@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useThemeColors } from '@/constants/theme';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 export default function CreateAccountScreen() {
   const colors = useThemeColors();
@@ -26,7 +27,7 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <View className="gap-sm">
         <Label>Name (optional)</Label>
         <TextInput
@@ -72,6 +73,6 @@ export default function CreateAccountScreen() {
         onPress={handleSubmit}
         disabled={isSubmitting || !email || password.length < 6}
       />
-    </ScrollView>
+    </FormScrollView>
   );
 }

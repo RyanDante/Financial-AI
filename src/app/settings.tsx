@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { Pressable, Switch, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -21,6 +21,7 @@ import type { ThemeMode } from '@/features/theme/theme.types';
 import { CURRENCIES, type CurrencyCode } from '@/constants/currencies';
 import { getColors, useThemeColors } from '@/constants/theme';
 import { cn } from '@/utils/cn';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { mode: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -307,7 +308,7 @@ export default function SettingsScreen() {
   const { defaultCurrency, setDefaultCurrency } = useSettingsStore();
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <AccountSection />
 
       <MoneyAccountsSection />
@@ -386,6 +387,6 @@ export default function SettingsScreen() {
           <Caption className="text-warning">Development key: the AI key in .env is built into this app. Don&rsquo;t share or publish this build.</Caption>
         ) : null}
       </Card>
-    </ScrollView>
+    </FormScrollView>
   );
 }

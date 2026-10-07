@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Body, Button, Caption, Label } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useThemeColors } from '@/constants/theme';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 export default function SignInScreen() {
   const colors = useThemeColors();
@@ -25,7 +26,7 @@ export default function SignInScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <View className="gap-sm">
         <Label>Email</Label>
         <TextInput
@@ -60,6 +61,6 @@ export default function SignInScreen() {
       <Link href="/auth/forgot-password" asChild>
         <Body className="text-center text-accent-secondary">Forgot your password?</Body>
       </Link>
-    </ScrollView>
+    </FormScrollView>
   );
 }

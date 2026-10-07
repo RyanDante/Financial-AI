@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +12,7 @@ import { useThemeColors } from '@/constants/theme';
 import { formatMoney } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { NewTransaction, Transaction } from '@/types/finance';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 type Direction = 'expense' | 'income';
 
@@ -90,7 +91,7 @@ export default function ImportSmsScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <View className="gap-sm">
         <Label>Paste your MoMo or Orange Money messages</Label>
         <TextInput
@@ -126,7 +127,7 @@ export default function ImportSmsScreen() {
           disabled={isSaving || selected.length === 0}
         />
       ) : null}
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

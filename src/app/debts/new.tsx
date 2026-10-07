@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Button, Caption, ChipGroup, Label } from '@/components/ui';
@@ -10,6 +10,7 @@ import { useThemeColors } from '@/constants/theme';
 import { parseMoneyInput } from '@/utils/currency';
 import { cn } from '@/utils/cn';
 import type { DebtDirection } from '@/types/finance';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 /** Add money the user owes (a loan, credit) or money they lent someone. */
 export default function NewDebtScreen() {
@@ -56,7 +57,7 @@ export default function NewDebtScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <ChipGroup<DebtDirection>
         options={[
           { id: 'i_owe', label: 'I owe' },
@@ -77,7 +78,7 @@ export default function NewDebtScreen() {
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
       <Button label={isSaving ? 'Saving…' : 'Save debt'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

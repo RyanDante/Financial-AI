@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -9,6 +9,7 @@ import { useDebts } from '@/features/debts/useDebts';
 import { useFinanceStore } from '@/store/financeStore';
 import { useThemeColors } from '@/constants/theme';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 /**
  * Record a repayment on a debt (either direction), optionally also logging
@@ -90,7 +91,7 @@ export default function PayDebtScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <Stack.Screen options={{ title: isOwed ? 'Record repayment received' : 'Record a payment' }} />
 
       <Card className="gap-xs">
@@ -140,6 +141,6 @@ export default function PayDebtScreen() {
       <Pressable onPress={handleDelete} accessibilityRole="button" className="items-center py-md">
         <Body className="text-danger">Remove this debt</Body>
       </Pressable>
-    </ScrollView>
+    </FormScrollView>
   );
 }

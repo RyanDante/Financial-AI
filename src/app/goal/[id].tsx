@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AmountText, Body, Button, Caption, Card, EmptyState, Heading, IconCircle, Label, ProgressBar } from '@/components/ui';
@@ -9,6 +9,7 @@ import { useFinanceStore } from '@/store/financeStore';
 import { useThemeColors } from '@/constants/theme';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import type { GoalContribution } from '@/types/finance';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 /** A goal's progress, its contribution history, and the "Add money" action. */
 export default function GoalDetailScreen() {
@@ -70,7 +71,7 @@ export default function GoalDetailScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <Stack.Screen
         options={{
           headerRight: () => (
@@ -130,6 +131,6 @@ export default function GoalDetailScreen() {
           )}
         </Card>
       </View>
-    </ScrollView>
+    </FormScrollView>
   );
 }

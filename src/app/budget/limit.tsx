@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Body, Button, Caption, Label } from '@/components/ui';
@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/store/financeStore';
 import { useThemeColors } from '@/constants/theme';
 import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from '@/constants/currencies';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
+import { FormScrollView } from '@/components/keyboard/keyboard';
 
 /** Modal for changing one category's limit in this month's budget. */
 export default function BudgetLimitScreen() {
@@ -38,7 +39,7 @@ export default function BudgetLimitScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg" keyboardShouldPersistTaps="handled">
+    <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
       <Stack.Screen options={{ title: `${category?.name ?? 'Category'} limit` }} />
       <Body className="text-text-secondary">Current limit: {formatMoney(currentLimitMinor, currency)} this month.</Body>
 
@@ -57,6 +58,6 @@ export default function BudgetLimitScreen() {
       </View>
 
       <Button label={isSaving ? 'Saving…' : 'Save limit'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
-    </ScrollView>
+    </FormScrollView>
   );
 }

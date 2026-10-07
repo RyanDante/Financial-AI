@@ -20,6 +20,7 @@ import { useAppLockStore } from '@/features/security/appLock.store';
 import { LockScreen } from '@/components/ui/LockScreen';
 import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
 import { configureNotifications, onReminderTapped, syncReminders } from '@/features/reminders/reminders.service';
+import { KeyboardRoot } from '@/components/keyboard/keyboard';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 configureNotifications();
@@ -88,31 +89,34 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
-        <View className="flex-1 bg-background" onLayout={onLayoutRootView}>
-          <StatusBar style={colorScheme === 'light' ? 'dark' : 'light'} />
-          <Stack screenOptions={pageHeaderOptions}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
-            <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="transaction/[id]" options={{ title: 'Transaction' }} />
-            <Stack.Screen name="goal/[id]" options={{ title: 'Goal' }} />
-            <Stack.Screen name="alerts" options={{ title: 'Alerts' }} />
-            <Stack.Screen name="settings" options={{ title: 'Settings' }} />
-            <Stack.Screen name="bills/index" options={{ title: 'Bills & subscriptions' }} />
-            <Stack.Screen name="debts/index" options={{ title: 'Debts' }} />
-            <Stack.Screen name="income/index" options={{ title: 'Income & payday' }} />
-            <Stack.Screen name="transaction/new" options={modalOptions('Add transaction')} />
-            <Stack.Screen name="goal/new" options={modalOptions('New goal')} />
-            <Stack.Screen name="budget/limit" options={modalOptions('Budget limit')} />
-            <Stack.Screen name="account/edit" options={modalOptions('Account')} />
-            <Stack.Screen name="bills/new" options={modalOptions('Add a bill')} />
-            <Stack.Screen name="import/sms" options={modalOptions('Import from SMS')} />
-            <Stack.Screen name="debts/new" options={modalOptions('Add a debt')} />
-            <Stack.Screen name="debts/pay" options={modalOptions('Record a payment')} />
-            <Stack.Screen name="income/new" options={modalOptions('Add income')} />
-          </Stack>
-          {isLocked ? <LockScreen /> : null}
-        </View>
+        <KeyboardRoot>
+          <View className="flex-1 bg-background" onLayout={onLayoutRootView}>
+            <StatusBar style={colorScheme === 'light' ? 'dark' : 'light'} />
+            <Stack screenOptions={pageHeaderOptions}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+              <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
+              <Stack.Screen name="transaction/[id]" options={{ title: 'Transaction' }} />
+              <Stack.Screen name="goal/[id]" options={{ title: 'Goal' }} />
+              <Stack.Screen name="alerts" options={{ title: 'Alerts' }} />
+              <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+              <Stack.Screen name="bills/index" options={{ title: 'Bills & subscriptions' }} />
+              <Stack.Screen name="debts/index" options={{ title: 'Debts' }} />
+              <Stack.Screen name="income/index" options={{ title: 'Income & payday' }} />
+              <Stack.Screen name="transaction/new" options={modalOptions('Add transaction')} />
+              <Stack.Screen name="goal/new" options={modalOptions('New goal')} />
+              <Stack.Screen name="budget/limit" options={modalOptions('Budget limit')} />
+              <Stack.Screen name="account/edit" options={modalOptions('Account')} />
+              <Stack.Screen name="bills/new" options={modalOptions('Add a bill')} />
+              <Stack.Screen name="import/sms" options={modalOptions('Import from SMS')} />
+              <Stack.Screen name="debts/new" options={modalOptions('Add a debt')} />
+              <Stack.Screen name="debts/pay" options={modalOptions('Record a payment')} />
+              <Stack.Screen name="income/new" options={modalOptions('Add income')} />
+              <Stack.Screen name="ai/conversations" options={modalOptions('Your chats')} />
+            </Stack>
+            {isLocked ? <LockScreen /> : null}
+          </View>
+        </KeyboardRoot>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
