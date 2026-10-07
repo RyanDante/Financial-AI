@@ -9,6 +9,7 @@ import { aiConfig } from './config';
 import { createLLMClient } from './llm/createClient';
 import { LLMProvider } from './providers/llmProvider';
 import { conversationTitle, describeToolStep } from './chatText';
+import { t } from '@/i18n';
 
 export const toolRegistry = new ToolRegistry();
 registerFinancialTools(toolRegistry);
@@ -34,17 +35,18 @@ export const aiRouter = new AIRouter({
  */
 export const aiClient = llmClient;
 
-const PROVIDER_LABELS = { anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', mock: 'the offline copilot' } as const;
+const PROVIDER_LABELS = { anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini' } as const;
 
 /** "Claude", "OpenAI", "Gemini" or "the offline copilot", for privacy notes. */
 export function providerLabel(): string {
-  return PROVIDER_LABELS[aiStatus.provider];
+  return aiStatus.provider === 'mock' ? t('ai.offlineCopilot') : PROVIDER_LABELS[aiStatus.provider];
 }
 
 /** What's answering, for Settings › About and the AI screen. */
 export const aiStatus = {
   provider: llmClient ? aiConfig.provider : ('mock' as const),
   model: llmClient?.model ?? null,
+  transport: aiConfig.transport,
   problem: aiConfig.problem ?? clientProblem,
 };
 

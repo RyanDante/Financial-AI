@@ -11,20 +11,22 @@ import { useFinanceStore } from '@/store/financeStore';
 import { useThemeColors } from '@/constants/theme';
 import { calendarDaysUntil } from '@/utils/months';
 import type { IncomeSource } from '@/types/finance';
+import { getLocale, useT } from '@/i18n';
 
 /** Salary and other regular income. The next payday drives the daily allowance on Overview. */
 export default function IncomeScreen() {
   const colors = useThemeColors();
+  const { t, tn } = useT();
   const sources = useIncome();
   const loadAll = useFinanceStore((s) => s.loadAll);
   const payday = nextPayday(sources);
 
   const stopTracking = (source: IncomeSource) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(`Stop tracking ${source.source}?`, 'It will no longer set your payday or daily allowance.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('income.stopTitle', { name: source.source }), t('income.stopBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Stop tracking',
+        text: t('bills.stop'),
         style: 'destructive',
         onPress: async () => {
           await incomeRepository.setIncomeSourceActive(source.id, false);
@@ -39,7 +41,7 @@ export default function IncomeScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable onPress={() => router.push('/income/new')} accessibilityRole="button" accessibilityLabel="Add income" hitSlop={8} className="h-11 w-11 items-end justify-center">
+            <Pressable onPress={() => router.push('/income/new')} accessibilityRole="button" accessibilityLabel={t('nav.addIncome')} hitSlop={8} className="h-11 w-11 items-end justify-center">
               <Ionicons name="add" size={26} color={colors['text-primary']} />
             </Pressable>
           ),
@@ -48,17 +50,17 @@ export default function IncomeScreen() {
 
       {sources.length === 0 ? (
         <Card className="gap-md">
-          <EmptyState icon="cash-outline" title="No income added" description="Add your salary or other regular income to see how much you can spend each day until payday." />
-          <Button label="Add income" onPress={() => router.push('/income/new')} />
+          <EmptyState icon="cash-outline" title={t('income.none')} description={t('income.noneHint')} />
+          <Button label={t('nav.addIncome')} onPress={() => router.push('/income/new')} />
         </Card>
       ) : (
         <>
           {payday ? (
             <Card className="gap-xs">
-              <Caption>Next payday</Caption>
+              <Caption>{t('income.nextPayday')}</Caption>
               <Body className="font-sans-semibold">
-                {payday.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })} ·{' '}
-                {payday.inDays === 0 ? 'today' : payday.inDays === 1 ? 'tomorrow' : `in ${payday.inDays} days`}
+                {payday.date.toLocaleDateString(getLocale(), { weekday: 'long', day: 'numeric', month: 'long' })} ·{' '}
+                {payday.inDays === 0 ? t('alert.when.today') : payday.inDays === 1 ? t('alert.when.tomorrow') : tn('alert.when.inDays', payday.inDays)}
               </Body>
               <Caption>{payday.source}</Caption>
             </Card>
@@ -72,7 +74,7 @@ export default function IncomeScreen() {
                   key={source.id}
                   onPress={() => stopTracking(source)}
                   accessibilityRole="button"
-                  accessibilityHint="Stop tracking this income"
+                  accessibilityHint={t('income.stopHint')}
                   className={i === 0 ? 'flex-row items-center gap-md py-md' : 'flex-row items-center gap-md border-t border-border py-md'}
                 >
                   <IconCircle name="cash-outline" size={32} color={colors.success} backgroundColor={colors['success-muted']} />
@@ -80,7 +82,9 @@ export default function IncomeScreen() {
                     <Body numberOfLines={1}>{source.source}</Body>
                     <Caption>
                       {FREQUENCY_LABELS[source.frequency]}
-                      {next ? ` · next ${next.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} (${calendarDaysUntil(next)} days)` : ' · no date set'}
+                      {next
+                        ? t('income.next', { date: next.toLocaleDateString(getLocale(), { day: 'numeric', month: 'short' }), days: tn('common.days', calendarDaysUntil(next)) })
+                        : t('income.noDate')}
                     </Caption>
                   </View>
                   <AmountText valueMinor={source.amountMinor} currency={source.currency} size="sm" tone="success" />
@@ -88,7 +92,7 @@ export default function IncomeScreen() {
               );
             })}
           </Card>
-          <Caption>Tap an income source to stop tracking it.</Caption>
+          <Caption>{t('income.tapHint')}</Caption>
         </>
       )}
     </ScrollView>

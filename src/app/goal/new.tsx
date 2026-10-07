@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { useThemeColors } from '@/constants/theme';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 const DEFAULT_DEADLINE_MONTHS = 6;
 
@@ -23,6 +24,7 @@ const DEFAULT_DEADLINE_MONTHS = 6;
 export default function NewGoalScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const colors = useThemeColors();
+  const { t } = useT();
   const defaultCurrency = useSettingsStore((s) => s.defaultCurrency);
   const loadAll = useFinanceStore((s) => s.loadAll);
   const existing = useFinanceStore((s) => (id ? s.goals.find((g) => g.id === id) : undefined));
@@ -45,17 +47,17 @@ export default function NewGoalScreen() {
     const targetAmountMinor = parseMoneyInput(targetInput, currency);
     const currentAmountMinor = currentInput ? parseMoneyInput(currentInput, currency) : 0;
     if (!name.trim()) {
-      setError('Give your goal a name.');
+      setError(t('goalForm.nameError'));
       Haptics.selectionAsync();
       return;
     }
     if (targetAmountMinor === null || targetAmountMinor <= 0) {
-      setError('Enter a target amount greater than 0.');
+      setError(t('goalForm.targetError'));
       Haptics.selectionAsync();
       return;
     }
     if (currentAmountMinor === null || currentAmountMinor < 0) {
-      setError('Enter what you have already saved as a number, or leave it empty.');
+      setError(t('goalForm.savedError'));
       Haptics.selectionAsync();
       return;
     }
@@ -75,10 +77,10 @@ export default function NewGoalScreen() {
   const handleDelete = () => {
     if (!existing) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(`Delete "${existing.name}"?`, 'The goal and its progress are removed. Money you added stays in your accounts.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('goalForm.deleteTitle', { goal: existing.name }), t('goalForm.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           await goalsRepository.deleteGoal(existing.id);
@@ -92,21 +94,21 @@ export default function NewGoalScreen() {
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
-      <Stack.Screen options={{ title: existing ? 'Edit goal' : 'New goal' }} />
+      <Stack.Screen options={{ title: existing ? t('goalForm.editTitle') : t('nav.newGoal') }} />
 
       <View className="gap-sm">
-        <Label>Goal name</Label>
+        <Label>{t('goalForm.name')}</Label>
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Buy a laptop"
+          placeholder={t('goalForm.namePlaceholder')}
           placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
 
       <View className="gap-sm">
-        <Label>Target amount ({currency})</Label>
+        <Label>{t('goalForm.target', { currency })}</Label>
         <TextInput
           value={targetInput}
           onChangeText={setTargetInput}
@@ -118,10 +120,10 @@ export default function NewGoalScreen() {
       </View>
 
       {existing ? (
-        <Caption>Saved so far: {formatMoney(existing.currentAmountMinor, currency)}. Use &ldquo;Add money&rdquo; on the goal to change it.</Caption>
+        <Caption>{t('goalForm.savedSoFar', { amount: formatMoney(existing.currentAmountMinor, currency) })}</Caption>
       ) : (
         <View className="gap-sm">
-          <Label>Already saved (optional)</Label>
+          <Label>{t('goalForm.alreadySaved')}</Label>
           <TextInput
             value={currentInput}
             onChangeText={setCurrentInput}
@@ -140,17 +142,17 @@ export default function NewGoalScreen() {
         className="min-h-[44px] flex-row items-center gap-sm"
       >
         <Ionicons name={hasDeadline ? 'checkbox' : 'square-outline'} size={20} color={hasDeadline ? colors.accent : colors['text-muted']} />
-        <BodySmall>Set a deadline</BodySmall>
+        <BodySmall>{t('goalForm.setDeadline')}</BodySmall>
       </Pressable>
-      {hasDeadline ? <DateField label="Reach it by" value={deadline} onChange={setDeadline} minimumDate={new Date()} /> : null}
+      {hasDeadline ? <DateField label={t('goalForm.reachBy')} value={deadline} onChange={setDeadline} minimumDate={new Date()} /> : null}
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <Button label={isSaving ? 'Saving…' : existing ? 'Save goal' : 'Create goal'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
+      <Button label={isSaving ? t('common.saving') : existing ? t('goalForm.save') : t('goalForm.create')} className="mt-sm" onPress={handleSave} disabled={isSaving} />
 
       {existing ? (
         <Pressable onPress={handleDelete} accessibilityRole="button" className="items-center py-md">
-          <Body className="text-danger">Delete goal</Body>
+          <Body className="text-danger">{t('goalForm.delete')}</Body>
         </Pressable>
       ) : null}
     </FormScrollView>

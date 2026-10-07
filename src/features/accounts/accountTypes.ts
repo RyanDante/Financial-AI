@@ -1,15 +1,27 @@
 import type { Ionicons } from '@expo/vector-icons';
 import type { Account, AccountType } from '@/types/finance';
+import { t } from '@/i18n';
 
 /** Display order and wording for account types; `mobile_money` matters most for XAF users. */
 export const ACCOUNT_TYPES: { type: AccountType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { type: 'cash', label: 'Cash', icon: 'wallet-outline' },
-  { type: 'mobile_money', label: 'Mobile money', icon: 'phone-portrait-outline' },
-  { type: 'checking', label: 'Bank account', icon: 'card-outline' },
-  { type: 'savings', label: 'Savings', icon: 'trending-up-outline' },
-  { type: 'credit', label: 'Credit card', icon: 'card-outline' },
-  { type: 'other', label: 'Other', icon: 'ellipsis-horizontal' },
+  typeMeta('cash', 'wallet-outline'),
+  typeMeta('mobile_money', 'phone-portrait-outline'),
+  typeMeta('checking', 'card-outline'),
+  typeMeta('savings', 'trending-up-outline'),
+  typeMeta('credit', 'card-outline'),
+  typeMeta('other', 'ellipsis-horizontal'),
 ];
+
+/** `label` is read at access time, so it follows the app language. */
+function typeMeta(type: AccountType, icon: keyof typeof Ionicons.glyphMap): { type: AccountType; label: string; icon: keyof typeof Ionicons.glyphMap } {
+  return {
+    type,
+    icon,
+    get label() {
+      return t(`accountType.${type}`);
+    },
+  };
+}
 
 export function getAccountTypeMeta(type: AccountType): (typeof ACCOUNT_TYPES)[number] {
   return ACCOUNT_TYPES.find((t) => t.type === type) ?? ACCOUNT_TYPES[ACCOUNT_TYPES.length - 1];

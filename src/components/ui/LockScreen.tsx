@@ -6,6 +6,7 @@ import { useAppLockStore } from '@/features/security/appLock.store';
 import { useThemeColors } from '@/constants/theme';
 import { Body } from './Typography';
 import { Button } from './Button';
+import { useT } from '@/i18n';
 
 /**
  * Covers the whole app while it's locked: nothing financial is visible
@@ -16,6 +17,7 @@ export function LockScreen() {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const unlock = useAppLockStore((s) => s.unlock);
+  const { t } = useT();
   const asked = useRef(false);
 
   useEffect(() => {
@@ -36,8 +38,8 @@ export function LockScreen() {
       <Text accessibilityRole="header" className="font-display text-[28px] leading-[32px] text-text-primary">
         F-AI is locked
       </Text>
-      <Body className="text-center text-text-secondary">Use your fingerprint, face or phone passcode to see your finances.</Body>
-      <Button label="Unlock" className="self-stretch" onPress={() => unlock()} />
+      <Body className="text-center text-text-secondary">{t('lock.message')}</Body>
+      <Button label={t('lock.unlock')} className="self-stretch" onPress={() => unlock()} />
     </View>
   );
 }

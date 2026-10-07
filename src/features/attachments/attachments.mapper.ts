@@ -1,13 +1,14 @@
 import type { FileUploadStatus } from '@/types/files';
+import { t } from '@/i18n';
 
 export function getUploadStatusLabel(status: FileUploadStatus): string {
   switch (status) {
     case 'pending':
-      return 'Waiting to upload';
+      return t('upload.pending');
     case 'uploaded':
-      return 'Backed up';
+      return t('upload.uploaded');
     case 'failed':
-      return 'Upload failed';
+      return t('upload.failed');
   }
 }
 

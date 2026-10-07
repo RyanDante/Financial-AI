@@ -17,9 +17,11 @@ import { useFinanceStore } from '@/store/financeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { calculateAvailableMoney, calculateGoalProgress } from '@/finance/calculations';
 import { useThemeColors } from '@/constants/theme';
+import { getLocale, useT } from '@/i18n';
 
 export default function HomeScreen() {
   const colors = useThemeColors();
+  const { t, tn } = useT();
   const { accounts, categories, transactions, goals, totalBalanceMinor, monthlyIncomeMinor, monthlySpendingMinor, savingsRate, upcomingObligationsMinor, reserveTargetMinor, loadAll } =
     useFinanceStore();
   const currency = useSettingsStore((s) => s.defaultCurrency);
@@ -55,30 +57,30 @@ export default function HomeScreen() {
       contentContainerClassName="pb-3xl"
     >
       <ScreenHeader
-        title="Overview"
-        subtitle={accounts.length > 0 ? `${accounts.length} account${accounts.length > 1 ? 's' : ''}` : undefined}
+        title={t('home.title')}
+        subtitle={accounts.length > 0 ? tn('home.accounts', accounts.length) : undefined}
       />
 
       <View className="px-lg">
         <Card variant="raised" className="gap-sm">
-          <Label>Available to spend safely</Label>
+          <Label>{t('home.availableSafely')}</Label>
           <AmountText valueMinor={availableMoneyMinor} currency={currency} size="lg" tone={availableMoneyMinor < 0 ? 'danger' : 'primary'} />
           {allowance ? (
             <Caption className="text-text-secondary">
-              About {formatMoney(allowance.perDayMinor, currency)} a day until payday ({allowance.payday.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })})
+              {t('home.perDay', { amount: formatMoney(allowance.perDayMinor, currency), date: allowance.payday.date.toLocaleDateString(getLocale(), { weekday: 'short', day: 'numeric', month: 'short' }) })}
             </Caption>
           ) : (
             <Pressable onPress={() => router.push('/income/new')} accessibilityRole="button" hitSlop={8}>
-              <Caption className="font-sans-semibold text-accent-secondary">Add your payday to see a daily allowance</Caption>
+              <Caption className="font-sans-semibold text-accent-secondary">{t('home.addPayday')}</Caption>
             </Pressable>
           )}
           <View className="mt-sm flex-row gap-lg">
             <View className="flex-1">
-              <Caption>Total balance</Caption>
+              <Caption>{t('home.totalBalance')}</Caption>
               <AmountText valueMinor={totalBalanceMinor} currency={currency} size="sm" />
             </View>
             <View className="flex-1">
-              <Caption>Reserve target</Caption>
+              <Caption>{t('home.reserveTarget')}</Caption>
               <AmountText valueMinor={reserveTargetMinor} currency={currency} size="sm" />
             </View>
           </View>
@@ -87,7 +89,7 @@ export default function HomeScreen() {
 
       {recommendations.length > 0 ? (
         <View className="gap-sm px-lg pt-lg">
-          <Label>Suggestions</Label>
+          <Label>{t('home.suggestions')}</Label>
           <RecommendationCarousel
             items={recommendations}
             onAddExpense={(item) =>
@@ -102,23 +104,23 @@ export default function HomeScreen() {
 
       <View className="flex-row gap-md px-lg pt-lg">
         <Card className="flex-1 gap-xs">
-          <Caption>Income this month</Caption>
+          <Caption>{t('home.incomeThisMonth')}</Caption>
           <AmountText valueMinor={monthlyIncomeMinor} currency={currency} size="sm" tone="success" />
         </Card>
         <Card className="flex-1 gap-xs">
-          <Caption>Spent this month</Caption>
+          <Caption>{t('home.spentThisMonth')}</Caption>
           <AmountText valueMinor={monthlySpendingMinor} currency={currency} size="sm" tone="danger" />
         </Card>
       </View>
 
       {debts.length > 0 ? (
         <View className="px-lg pt-lg">
-          <Pressable onPress={() => router.push('/debts')} accessibilityRole="button" accessibilityLabel={`Debts: you owe ${formatMoney(iOweMinor, currency)}, owed to you ${formatMoney(owedToMeMinor, currency)}`}>
+          <Pressable onPress={() => router.push('/debts')} accessibilityRole="button" accessibilityLabel={t('home.debtsA11y', { owe: formatMoney(iOweMinor, currency), owed: formatMoney(owedToMeMinor, currency) })}>
             <Card className="flex-row items-center gap-md">
               <View className="flex-1 gap-xs">
-                <Label>Debts</Label>
+                <Label>{t('home.debts')}</Label>
                 <Caption>
-                  You owe <AmountText valueMinor={iOweMinor} currency={currency} size="xs" /> · Owed to you{' '}
+                  {t('home.youOwe')} <AmountText valueMinor={iOweMinor} currency={currency} size="xs" /> · {t('home.owedToYou')}{' '}
                   <AmountText valueMinor={owedToMeMinor} currency={currency} size="xs" tone="success" />
                 </Caption>
               </View>
@@ -129,19 +131,19 @@ export default function HomeScreen() {
       ) : null}
 
       <View className="px-lg pt-lg">
-        <Pressable onPress={() => router.push('/bills')} accessibilityRole="button" accessibilityLabel="Upcoming bills. Open bills and subscriptions">
+        <Pressable onPress={() => router.push('/bills')} accessibilityRole="button" accessibilityLabel={t('home.billsA11y')}>
           <Card className="flex-row items-center gap-md">
             <View className="flex-1 gap-xs">
-              <Label>Upcoming bills</Label>
+              <Label>{t('home.upcomingBills')}</Label>
               {nextBill ? (
                 <>
                   <AmountText valueMinor={upcomingObligationsMinor} currency={currency} size="sm" />
                   <Caption numberOfLines={1}>
-                    Per month · next: {nextBill.name}, {formatDue(nextBill).toLowerCase()}
+                    {t('home.perMonthNext', { bill: nextBill.name, due: formatDue(nextBill).toLowerCase() })}
                   </Caption>
                 </>
               ) : (
-                <Caption>Add rent, electricity and subscriptions to plan ahead.</Caption>
+                <Caption>{t('home.addBillsHint')}</Caption>
               )}
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors['text-muted']} />
@@ -152,7 +154,7 @@ export default function HomeScreen() {
       <View className="px-lg pt-lg">
         <Card className="gap-sm">
           <View className="flex-row items-center justify-between">
-            <Label>Savings rate</Label>
+            <Label>{t('home.savingsRate')}</Label>
             <Badge label={`${savingsRate.toFixed(0)}%`} tone={savingsRate >= 20 ? 'success' : savingsRate >= 0 ? 'warning' : 'danger'} />
           </View>
           <ProgressBar percent={Math.max(0, savingsRate)} tone={savingsRate >= 20 ? 'success' : 'warning'} />
@@ -165,7 +167,7 @@ export default function HomeScreen() {
 
       {activeGoals.length > 0 ? (
         <View className="gap-sm px-lg pt-lg">
-          <Label>Goals</Label>
+          <Label>{t('home.goals')}</Label>
           {activeGoals.map((goal) => {
             const progress = calculateGoalProgress(goal);
             return (
@@ -173,7 +175,7 @@ export default function HomeScreen() {
                 key={goal.id}
                 onPress={() => router.push({ pathname: '/goal/[id]', params: { id: goal.id } })}
                 accessibilityRole="button"
-                accessibilityLabel={`${goal.name}, ${progress.percent.toFixed(0)}% saved`}
+                accessibilityLabel={t('home.goalA11y', { goal: goal.name, percent: progress.percent.toFixed(0) })}
               >
                 <Card className="gap-sm">
                   <View className="flex-row justify-between">
@@ -190,14 +192,14 @@ export default function HomeScreen() {
 
       <View className="pt-lg">
         <View className="flex-row items-center justify-between px-lg pb-sm">
-          <Label>Recent transactions</Label>
+          <Label>{t('home.recent')}</Label>
           <Pressable onPress={() => router.push('/transactions')}>
-            <Caption className="text-accent-secondary">See all</Caption>
+            <Caption className="text-accent-secondary">{t('home.seeAll')}</Caption>
           </Pressable>
         </View>
         <View className="px-lg">
           {transactions.length === 0 ? (
-            <EmptyState icon="receipt-outline" title="No transactions yet" description="Add your first transaction to see it here." />
+            <EmptyState icon="receipt-outline" title={t('home.noTransactions')} description={t('home.noTransactionsHint')} />
           ) : (
             transactions.slice(0, 6).map((tx) => (
               <Pressable key={tx.id} onPress={() => router.push({ pathname: '/transaction/[id]', params: { id: tx.id } })}>

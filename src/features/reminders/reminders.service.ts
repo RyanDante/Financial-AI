@@ -5,6 +5,7 @@ import { calculateMonthlySpending } from '@/finance/calculations';
 import { toBillItems } from '@/features/bills/bills';
 import { currentMonthKey, isInMonth, monthRange } from '@/utils/months';
 import { budgetWarnings, planReminders, type BudgetUsage } from './reminders';
+import { t } from '@/i18n';
 
 const REMINDERS_KEY = 'reminders_enabled';
 const SENT_BUDGET_WARNINGS_KEY = 'budget_warnings_sent';
@@ -18,7 +19,7 @@ export function configureNotifications(): void {
     handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
   });
   if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync(CHANNEL_ID, { name: 'Bill and budget reminders', importance: Notifications.AndroidImportance.DEFAULT }).catch(() => {});
+    Notifications.setNotificationChannelAsync(CHANNEL_ID, { name: t('reminder.channel'), importance: Notifications.AndroidImportance.DEFAULT }).catch(() => {});
   }
 }
 
@@ -44,12 +45,12 @@ export async function enableReminders(): Promise<string | null> {
   const Notifications = getNotifications();
   if (!Notifications) {
     return remindersUnsupportedHere
-      ? "Reminders don't work in Expo Go on Android. They work in a development build of F-AI."
-      : "Reminders aren't available on this device.";
+      ? t('settings.remindersUnsupported')
+      : t('settings.remindersUnavailable');
   }
   const current = await Notifications.getPermissionsAsync();
   const granted = current.granted || (await Notifications.requestPermissionsAsync()).granted;
-  if (!granted) return 'Notifications are off for F-AI. Allow them in your phone settings to get reminders.';
+  if (!granted) return t('settings.remindersDenied');
   await settingsRepository.setSetting(REMINDERS_KEY, 'true');
   await syncReminders();
   return null;

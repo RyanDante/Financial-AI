@@ -12,6 +12,7 @@ import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { cn } from '@/utils/cn';
 import type { AccountType } from '@/types/finance';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 /**
  * Add an account, or edit one when opened with `?id=` (from Settings).
@@ -21,6 +22,7 @@ import { FormScrollView } from '@/components/keyboard/keyboard';
 export default function EditAccountScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const colors = useThemeColors();
+  const { t } = useT();
   const accounts = useFinanceStore((s) => s.accounts);
   const { createAccount, updateAccount } = useFinanceStore();
   const defaultCurrency = useSettingsStore((s) => s.defaultCurrency);
@@ -35,13 +37,13 @@ export default function EditAccountScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError('Give the account a name, e.g. "MTN MoMo".');
+      setError(t('accountForm.nameError'));
       Haptics.selectionAsync();
       return;
     }
     const initialBalanceMinor = balanceInput.trim() === '' ? 0 : parseMoneyInput(balanceInput, currency);
     if (initialBalanceMinor === null) {
-      setError('Enter the starting balance as a number, or leave it empty for 0.');
+      setError(t('accountForm.balanceError'));
       Haptics.selectionAsync();
       return;
     }
@@ -59,10 +61,10 @@ export default function EditAccountScreen() {
   const handleArchive = () => {
     if (!existing) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(`Archive ${existing.name}?`, 'It disappears from your accounts and total balance. Its past transactions stay in your history.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('accountForm.archiveTitle', { account: existing.name }), t('accountForm.archiveBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Archive',
+        text: t('accountForm.archive'),
         style: 'destructive',
         onPress: async () => {
           await updateAccount(existing.id, { isArchived: true });
@@ -74,21 +76,21 @@ export default function EditAccountScreen() {
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
-      <Stack.Screen options={{ title: existing ? 'Edit account' : 'Add account' }} />
+      <Stack.Screen options={{ title: existing ? t('accountForm.editTitle') : t('accountForm.addTitle') }} />
 
       <View className="gap-sm">
-        <Label>Name</Label>
+        <Label>{t('accountForm.name')}</Label>
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder="e.g. MTN MoMo, Afriland, Wallet"
+          placeholder={t('accountForm.namePlaceholder')}
           placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
 
       <View className="gap-sm">
-        <Label>Type</Label>
+        <Label>{t('accountForm.type')}</Label>
         <View className="flex-row flex-wrap gap-sm">
           {ACCOUNT_TYPES.map((option) => {
             const isSelected = option.type === type;
@@ -109,7 +111,7 @@ export default function EditAccountScreen() {
       </View>
 
       <View className="gap-sm">
-        <Label>Starting balance ({currency})</Label>
+        <Label>{t('accountForm.startingBalance', { currency })}</Label>
         <TextInput
           value={balanceInput}
           onChangeText={setBalanceInput}
@@ -118,20 +120,20 @@ export default function EditAccountScreen() {
           placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-[22px] text-text-primary"
         />
-        <Caption>What the account held before your first transaction in F-AI. Use a minus sign for money owed.</Caption>
+        <Caption>{t('accountForm.startingHint')}</Caption>
       </View>
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <Button label={isSaving ? 'Saving…' : 'Save account'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
+      <Button label={isSaving ? t('common.saving') : t('accountForm.save')} className="mt-sm" onPress={handleSave} disabled={isSaving} />
 
       {existing && canArchiveAccount(existing, accounts) ? (
         <Pressable onPress={handleArchive} accessibilityRole="button" className="items-center py-md">
-          <Body className="text-danger">Archive account</Body>
+          <Body className="text-danger">{t('accountForm.archiveAccount')}</Body>
         </Pressable>
       ) : null}
       {existing && !canArchiveAccount(existing, accounts) ? (
-        <Caption className="text-center">This is your only account, so it can&rsquo;t be archived.</Caption>
+        <Caption className="text-center">{t('accountForm.onlyAccount')}</Caption>
       ) : null}
     </FormScrollView>
   );

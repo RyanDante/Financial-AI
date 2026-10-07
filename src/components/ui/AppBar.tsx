@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '@/constants/theme';
 import { useAlerts } from '@/features/alerts/useAlerts';
+import { useT } from '@/i18n';
 
 const BAR_HEIGHT = 52;
 const ICON_HIT_SLOP = { top: 4, bottom: 4, left: 4, right: 4 };
@@ -23,6 +24,7 @@ export function AppBar() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const alertCount = useAlerts().length;
+  const { t, tn } = useT();
 
   const go = (href: '/alerts' | '/settings') => {
     Haptics.selectionAsync();
@@ -40,7 +42,7 @@ export function AppBar() {
             onPress={() => go('/alerts')}
             hitSlop={ICON_HIT_SLOP}
             accessibilityRole="button"
-            accessibilityLabel={alertCount > 0 ? `Alerts, ${alertCount} need${alertCount === 1 ? 's' : ''} attention` : 'Alerts, none'}
+            accessibilityLabel={alertCount > 0 ? tn('common.alerts', alertCount) : t('common.alertsNone')}
             className="h-11 w-11 items-center justify-center rounded-full"
           >
             <Ionicons name="notifications-outline" size={22} color={colors['text-secondary']} />
@@ -50,7 +52,7 @@ export function AppBar() {
             onPress={() => go('/settings')}
             hitSlop={ICON_HIT_SLOP}
             accessibilityRole="button"
-            accessibilityLabel="Settings"
+            accessibilityLabel={t('nav.settings')}
             className="h-11 w-11 items-center justify-center rounded-full"
           >
             <Ionicons name="settings-outline" size={22} color={colors['text-secondary']} />

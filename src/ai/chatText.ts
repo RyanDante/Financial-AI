@@ -1,30 +1,37 @@
-/** What the copilot is doing, shown under the typing indicator while a tool runs. */
-const TOOL_STEPS: Record<string, string> = {
-  getBalance: 'Reading your balances…',
-  getAccounts: 'Reading your accounts…',
-  getAccountsWithBalances: 'Reading your accounts…',
-  getTransactions: 'Looking through your transactions…',
-  getSpending: "Adding up this month's spending…",
-  getSpendingByCategory: 'Grouping your spending by category…',
-  calculateCashFlow: 'Working out money in and out…',
-  getBudget: 'Checking your budget…',
-  getBudgetStatus: 'Checking your budget…',
-  getGoals: 'Reading your goals…',
-  getGoalProgress: 'Checking your goal progress…',
-  calculateGoalProjection: 'Projecting your goal…',
-  getSubscriptions: 'Reading your subscriptions…',
-  getBills: 'Checking your bills…',
-  getUpcomingObligations: 'Adding up upcoming bills…',
-  calculatePurchaseImpact: 'Working out what this purchase would change…',
-  forecastBalance: 'Projecting your balance…',
-  getRecommendations: 'Looking for suggestions…',
-  getAlerts: 'Checking what needs attention…',
-  getDebts: 'Reading your debts…',
-  getIncomeAndAllowance: 'Checking your income and payday…',
+import { t, type MessageKey } from '@/i18n';
+
+/** Tools that share a step description with another tool. */
+const STEP_ALIASES: Record<string, string> = {
+  getAccountsWithBalances: 'getAccounts',
+  getBudgetStatus: 'getBudget',
 };
 
+const STEP_TOOLS = new Set([
+  'getBalance',
+  'getAccounts',
+  'getTransactions',
+  'getSpending',
+  'getSpendingByCategory',
+  'calculateCashFlow',
+  'getBudget',
+  'getGoals',
+  'getGoalProgress',
+  'calculateGoalProjection',
+  'getSubscriptions',
+  'getBills',
+  'getUpcomingObligations',
+  'calculatePurchaseImpact',
+  'forecastBalance',
+  'getRecommendations',
+  'getAlerts',
+  'getDebts',
+  'getIncomeAndAllowance',
+]);
+
+/** What the copilot is doing, shown under the typing indicator while a tool runs. */
 export function describeToolStep(toolName: string): string {
-  return TOOL_STEPS[toolName] ?? 'Checking your data…';
+  const name = STEP_ALIASES[toolName] ?? toolName;
+  return t(STEP_TOOLS.has(name) ? (`step.${name}` as MessageKey) : 'step.default');
 }
 
 const TITLE_MAX = 40;

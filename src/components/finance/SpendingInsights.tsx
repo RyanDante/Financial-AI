@@ -8,6 +8,7 @@ import { useSpendingInsights } from '@/features/insights/useSpendingInsights';
 import { formatMoney } from '@/utils/currency';
 import { formatMonthLabel, formatMonthShort } from '@/utils/months';
 import type { CurrencyCode } from '@/constants/currencies';
+import { useT } from '@/i18n';
 
 const TREND_HEIGHT = 96;
 const MIN_COLUMN = 3; // a month with any spending stays visible
@@ -21,6 +22,7 @@ const MIN_COLUMN = 3; // a month with any spending stays visible
 export function SpendingInsights({ currency }: { currency: CurrencyCode }) {
   const { month, breakdown, trend } = useSpendingInsights();
   const colors = useThemeColors();
+  const { t } = useT();
   const [selectedMonth, setSelectedMonth] = useState(month);
   const selected = trend.find((p) => p.month === selectedMonth) ?? trend[trend.length - 1];
   const hasTrend = trend.some((p) => p.totalMinor > 0);
@@ -29,7 +31,7 @@ export function SpendingInsights({ currency }: { currency: CurrencyCode }) {
 
   return (
     <View className="gap-sm">
-      <Label>Where your money went</Label>
+      <Label>{t('insights.title')}</Label>
 
       {breakdown.length > 0 ? (
         <Card className="gap-md">
@@ -39,7 +41,7 @@ export function SpendingInsights({ currency }: { currency: CurrencyCode }) {
               key={row.key}
               className="gap-xs"
               accessible
-              accessibilityLabel={`${row.label}: ${formatMoney(row.totalMinor, currency)}, ${row.percentage.toFixed(0)} percent of spending`}
+              accessibilityLabel={t('insights.rowA11y', { label: row.label, amount: formatMoney(row.totalMinor, currency), percent: row.percentage.toFixed(0) })}
             >
               <View className="flex-row items-baseline justify-between gap-md">
                 <Caption className="flex-1 text-text-primary" numberOfLines={1}>
@@ -61,17 +63,17 @@ export function SpendingInsights({ currency }: { currency: CurrencyCode }) {
         <Card className="gap-md">
           <View className="flex-row items-end justify-between">
             <View className="gap-xs">
-              <Overline>Spent in {formatMonthLabel(selected.month)}</Overline>
+              <Overline>{t('insights.spentIn', { month: formatMonthLabel(selected.month) })}</Overline>
               <AmountText valueMinor={selected.totalMinor} currency={currency} size="md" />
             </View>
             <Pressable
               onPress={() => router.navigate({ pathname: '/transactions', params: { month: selected.month } })}
               accessibilityRole="button"
-              accessibilityLabel={`See transactions for ${formatMonthLabel(selected.month)}`}
+              accessibilityLabel={t('insights.seeTransactionsFor', { month: formatMonthLabel(selected.month) })}
               hitSlop={8}
               className="min-h-[44px] justify-center"
             >
-              <Caption className="font-sans-semibold text-accent-secondary">See transactions</Caption>
+              <Caption className="font-sans-semibold text-accent-secondary">{t('insights.seeTransactions')}</Caption>
             </Pressable>
           </View>
 

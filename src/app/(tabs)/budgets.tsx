@@ -12,11 +12,13 @@ import { currentMonthKey } from '@/utils/months';
 import { calculateMonthlySpending } from '@/finance/calculations';
 import { majorToMinor } from '@/utils/currency';
 import type { Budget, BudgetCategory } from '@/types/finance';
+import { useT } from '@/i18n';
 
 const DEFAULT_CATEGORY_LIMIT_MAJOR = 20_000;
 
 export default function BudgetsScreen() {
   const categories = useFinanceStore((s) => s.categories);
+  const { t } = useT();
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
@@ -48,7 +50,7 @@ export default function BudgetsScreen() {
   const handleCreateBudget = async () => {
     setIsCreating(true);
     const created = await budgetsRepository.createBudget({
-      name: 'Monthly budget',
+      name: t('budgets.defaultName'),
       month,
       currency,
       categories: expenseCategories.map((category) => ({
@@ -66,7 +68,7 @@ export default function BudgetsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="pb-3xl">
-      <ScreenHeader title="Budgets" />
+      <ScreenHeader title={t('nav.budgets')} />
       <View className="px-lg pb-sm">
         <MonthStepper month={month} onChange={setMonth} />
       </View>
@@ -76,21 +78,21 @@ export default function BudgetsScreen() {
           <Card className="gap-md">
             <EmptyState
               icon="pie-chart-outline"
-              title={isCurrentMonth ? 'No budget set for this month' : 'No budget for this month'}
+              title={isCurrentMonth ? t('budgets.noneCurrent') : t('budgets.nonePast')}
               description={
                 isCurrentMonth
-                  ? `Create a starting budget across your ${expenseCategories.length} expense categories. You can fine-tune limits later.`
-                  : 'Budgets are created month by month. Step forward to plan the current month.'
+                  ? t('budgets.createHint', { count: expenseCategories.length })
+                  : t('budgets.pastHint')
               }
             />
             {isCurrentMonth ? (
-              <Button label={isCreating ? 'Creating…' : 'Create this month’s budget'} onPress={handleCreateBudget} disabled={isCreating} />
+              <Button label={isCreating ? t('budgets.creating') : t('budgets.create')} onPress={handleCreateBudget} disabled={isCreating} />
             ) : null}
           </Card>
         ) : (
           <Card>
-            <Label>Category limits</Label>
-            <Caption className="pb-sm">Tap a category to change its limit.</Caption>
+            <Label>{t('budgets.limits')}</Label>
+            <Caption className="pb-sm">{t('budgets.tapToChange')}</Caption>
             {budgetCategories.map((bc) => {
               const category = categoryById.get(bc.categoryId);
               if (!category) return null;
@@ -104,7 +106,7 @@ export default function BudgetsScreen() {
                     })
                   }
                   accessibilityRole="button"
-                  accessibilityHint="Changes this category's monthly limit"
+                  accessibilityHint={t('budgets.changeHint')}
                 >
                   <BudgetCategoryRow category={category} limitMinor={bc.limitMinor} spentMinor={spentByCategory(bc.categoryId)} currency={budget.currency} />
                 </Pressable>

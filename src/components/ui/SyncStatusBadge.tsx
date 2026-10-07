@@ -5,14 +5,15 @@ import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, w
 import { Caption } from './Typography';
 import { useThemeColors } from '@/constants/theme';
 import type { SyncStatus } from '@/services/sync/sync.types';
+import { useT, type MessageKey } from '@/i18n';
 
-const STATUS_META: Record<SyncStatus, { label: string; colorKey: 'text-muted' | 'accent' | 'success' | 'warning' | 'danger'; icon: keyof typeof Ionicons.glyphMap }> = {
-  idle: { label: 'Not signed in', colorKey: 'text-muted', icon: 'cloud-outline' },
-  syncing: { label: 'Syncing…', colorKey: 'accent', icon: 'sync' },
-  synced: { label: 'Synced', colorKey: 'success', icon: 'checkmark-circle' },
-  offline: { label: 'Offline', colorKey: 'warning', icon: 'cloud-offline-outline' },
-  error: { label: 'Sync failed', colorKey: 'danger', icon: 'alert-circle' },
-  blocked: { label: 'Sync blocked', colorKey: 'danger', icon: 'lock-closed' },
+const STATUS_META: Record<SyncStatus, { label: MessageKey; colorKey: 'text-muted' | 'accent' | 'success' | 'warning' | 'danger'; icon: keyof typeof Ionicons.glyphMap }> = {
+  idle: { label: 'sync.idle', colorKey: 'text-muted', icon: 'cloud-outline' },
+  syncing: { label: 'sync.syncing', colorKey: 'accent', icon: 'sync' },
+  synced: { label: 'sync.synced', colorKey: 'success', icon: 'checkmark-circle' },
+  offline: { label: 'sync.offline', colorKey: 'warning', icon: 'cloud-offline-outline' },
+  error: { label: 'sync.error', colorKey: 'danger', icon: 'alert-circle' },
+  blocked: { label: 'sync.blocked', colorKey: 'danger', icon: 'lock-closed' },
 };
 
 interface SyncStatusBadgeProps {
@@ -22,6 +23,7 @@ interface SyncStatusBadgeProps {
 /** Small status indicator so the user always knows whether their data is backed up — pulses gently while actively syncing. */
 export function SyncStatusBadge({ status }: SyncStatusBadgeProps) {
   const colors = useThemeColors();
+  const { t } = useT();
   const { label, colorKey, icon } = STATUS_META[status];
   const color = colors[colorKey];
   const opacity = useSharedValue(1);
@@ -41,7 +43,7 @@ export function SyncStatusBadge({ status }: SyncStatusBadgeProps) {
       <Animated.View style={animatedStyle}>
         <Ionicons name={icon} size={14} color={color} />
       </Animated.View>
-      <Caption style={{ color }}>{label}</Caption>
+      <Caption style={{ color }}>{t(label)}</Caption>
     </View>
   );
 }

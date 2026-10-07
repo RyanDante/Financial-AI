@@ -5,6 +5,7 @@ import { Badge, Body, Caption } from '@/components/ui';
 import { cn } from '@/utils/cn';
 import { extractAgentName, visibleToolCalls } from '@/types/ai';
 import type { ChatMessage } from '@/store/aiStore';
+import { useT, type MessageKey } from '@/i18n';
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -27,23 +28,24 @@ interface ChatBubbleProps {
 export function ChatBubble({ message, onRetry }: ChatBubbleProps) {
   const isUser = message.role === 'user';
   const failed = message.status === 'failed';
+  const { t } = useT();
 
   const showActions = () => {
     Haptics.selectionAsync();
     const copy = () => Clipboard.setStringAsync(message.content);
     const retry = failed && onRetry ? () => onRetry(message.id) : null;
     if (Platform.OS === 'ios') {
-      const options = retry ? ['Copy', 'Send again', 'Cancel'] : ['Copy', 'Cancel'];
+      const options = retry ? [t('ai.copy'), t('ai.sendAgain'), t('common.cancel')] : [t('ai.copy'), t('common.cancel')];
       ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: options.length - 1 }, (index) => {
         if (index === 0) copy();
         else if (index === 1 && retry) retry();
       });
       return;
     }
-    Alert.alert('Message', undefined, [
-      { text: 'Copy', onPress: copy },
-      ...(retry ? [{ text: 'Send again', onPress: retry }] : []),
-      { text: 'Cancel', style: 'cancel' as const },
+    Alert.alert(t('ai.message'), undefined, [
+      { text: t('ai.copy'), onPress: copy },
+      ...(retry ? [{ text: t('ai.sendAgain'), onPress: retry }] : []),
+      { text: t('common.cancel'), style: 'cancel' as const },
     ]);
   };
   const lines = message.content.split('\n');
@@ -55,7 +57,7 @@ export function ChatBubble({ message, onRetry }: ChatBubbleProps) {
       <Pressable
         onLongPress={showActions}
         delayLongPress={350}
-        accessibilityHint="Long-press to copy"
+        accessibilityHint={t('ai.longPressHint')}
         className={cn('max-w-[85%] gap-xs rounded-lg px-lg py-md', isUser ? 'bg-accent' : 'border border-border bg-surface')}
         style={{ opacity: message.status === 'sending' ? 0.7 : 1 }}
       >
@@ -64,12 +66,12 @@ export function ChatBubble({ message, onRetry }: ChatBubbleProps) {
           <ChatLine key={index} line={line} isUser={isUser} />
         ))}
         {checkedTools.length > 0 ? (
-          <Caption className={isUser ? 'text-on-accent/70' : undefined}>Checked: {checkedTools.map((tc) => tc.toolName).join(', ')}</Caption>
+          <Caption className={isUser ? 'text-on-accent/70' : undefined}>{t('ai.checked', { tools: checkedTools.map((tc) => tc.toolName).join(', ') })}</Caption>
         ) : null}
       </Pressable>
       {failed ? (
         <Pressable onPress={() => onRetry?.(message.id)} accessibilityRole="button" hitSlop={8} className="mt-xs min-h-[32px] justify-center">
-          <Caption className="text-danger">Not sent · Tap to retry</Caption>
+          <Caption className="text-danger">{t('ai.notSent')}</Caption>
         </Pressable>
       ) : null}
     </View>
@@ -85,11 +87,12 @@ const LABEL_TONE: Record<string, string> = {
 };
 
 function ChatLine({ line, isUser }: { line: string; isUser: boolean }) {
+  const { t } = useT();
   const label = Object.keys(LABEL_TONE).find((prefix) => line.startsWith(prefix));
   if (label && !isUser) {
     return (
       <Body>
-        <Body className={cn('font-sans-bold', LABEL_TONE[label])}>{label} </Body>
+        <Body className={cn('font-sans-bold', LABEL_TONE[label])}>{t(`ai.label.${label.slice(0, -1)}` as MessageKey)} </Body>
         {line.slice(label.length).trim()}
       </Body>
     );

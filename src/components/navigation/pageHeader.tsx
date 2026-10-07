@@ -2,6 +2,7 @@ import { Pressable } from 'react-native';
 import { router, type NativeStackNavigationOptions } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '@/constants/theme';
+import { useT } from '@/i18n';
 
 /**
  * The one header style for every page that isn't a tab (ui.md §17): pushed
@@ -31,11 +32,12 @@ export function modalOptions(title: string): NativeStackNavigationOptions {
 /** Dismisses the current modal. 44×44 target, labelled for screen readers. */
 export function CloseButton() {
   const colors = useThemeColors();
+  const { t } = useT();
   return (
     <Pressable
       onPress={() => router.back()}
       accessibilityRole="button"
-      accessibilityLabel="Close"
+      accessibilityLabel={t('common.close')}
       hitSlop={8}
       className="h-11 w-11 items-start justify-center"
     >

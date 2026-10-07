@@ -1,4 +1,5 @@
 import type { Category, Transaction, TransactionType } from '@/types/finance';
+import { categoryLabel } from '@/i18n';
 
 export type TransactionTypeFilter = 'all' | TransactionType;
 
@@ -16,7 +17,8 @@ export function filterTransactions(transactions: Transaction[], { query, type, c
     if (type !== 'all' && tx.type !== type) return false;
     if (!needle) return true;
     const categoryName = tx.categoryId ? categoriesById.get(tx.categoryId)?.name : undefined;
-    return [tx.merchant, tx.description, categoryName].some((field) => field && normalize(field).includes(needle));
+    // The translated name too, so a French search for "Alimentation" finds Food.
+    return [tx.merchant, tx.description, categoryName, categoryName && categoryLabel(categoryName)].some((field) => field && normalize(field).includes(needle));
   });
 }
 

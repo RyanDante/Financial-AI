@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { settingsRepository } from '@/database/repositories';
 import { shouldLockOnResume } from './appLock';
+import { t } from '@/i18n';
 
 const APP_LOCK_KEY = 'app_lock_enabled';
 
@@ -37,9 +38,9 @@ export const useAppLockStore = create<AppLockState>((set, get) => ({
     if (enabled) {
       const level = await LocalAuthentication.getEnrolledLevelAsync();
       if (level === LocalAuthentication.SecurityLevel.NONE) {
-        return 'Set up a screen lock (PIN, pattern, fingerprint or face) on this phone first.';
+        return t('lock.needsScreenLock');
       }
-      const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Turn on app lock', cancelLabel: 'Cancel' });
+      const result = await LocalAuthentication.authenticateAsync({ promptMessage: t('lock.turnOnPrompt'), cancelLabel: t('common.cancel') });
       if (!result.success) return result.error === 'user_cancel' || result.error === 'system_cancel' ? null : "Couldn't confirm it's you, so the lock stays off.";
     }
     await settingsRepository.setSetting(APP_LOCK_KEY, enabled ? 'true' : 'false');
@@ -48,7 +49,7 @@ export const useAppLockStore = create<AppLockState>((set, get) => ({
   },
 
   unlock: async () => {
-    const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock F-AI', cancelLabel: 'Cancel' });
+    const result = await LocalAuthentication.authenticateAsync({ promptMessage: t('lock.unlockPrompt'), cancelLabel: t('common.cancel') });
     if (result.success) set({ locked: false, backgroundedAt: null });
     return result.success;
   },

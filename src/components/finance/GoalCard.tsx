@@ -3,6 +3,7 @@ import { AmountText, Body, Caption, Card, IconCircle, ProgressBar } from '@/comp
 import { calculateGoalProgress } from '@/finance/calculations';
 import { formatMoney } from '@/utils/currency';
 import type { Goal } from '@/types/finance';
+import { useT } from '@/i18n';
 
 interface GoalCardProps {
   goal: Goal;
@@ -10,6 +11,7 @@ interface GoalCardProps {
 
 export function GoalCard({ goal }: GoalCardProps) {
   const progress = calculateGoalProgress(goal);
+  const { t, tn } = useT();
 
   return (
     <Card className="gap-md">
@@ -19,20 +21,20 @@ export function GoalCard({ goal }: GoalCardProps) {
           <Body className="font-sans-semibold">{goal.name}</Body>
           <Caption>
             {progress.isComplete
-              ? 'Completed'
+              ? t('goals.completed')
               : progress.isOverdue
-                ? 'Past deadline'
+                ? t('goals.pastDeadline')
                 : progress.daysRemaining !== null
-                  ? `${progress.daysRemaining} days left`
-                  : 'No deadline set'}
+                  ? tn('goals.daysLeft', progress.daysRemaining)
+                  : t('goals.noDeadline')}
           </Caption>
         </View>
         <AmountText valueMinor={goal.currentAmountMinor} currency={goal.currency} size="sm" />
       </View>
       <ProgressBar percent={progress.percent} tone={progress.isComplete ? 'success' : progress.isOverdue ? 'danger' : 'accent'} />
       <View className="flex-row justify-between">
-        <Caption>{progress.percent.toFixed(0)}% of goal</Caption>
-        <Caption>Target: {formatMoney(goal.targetAmountMinor, goal.currency)}</Caption>
+        <Caption>{t('goals.percentOfGoal', { percent: progress.percent.toFixed(0) })}</Caption>
+        <Caption>{t('goals.target', { amount: formatMoney(goal.targetAmountMinor, goal.currency) })}</Caption>
       </View>
     </Card>
   );

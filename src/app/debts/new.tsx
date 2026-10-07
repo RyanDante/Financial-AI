@@ -11,10 +11,12 @@ import { parseMoneyInput } from '@/utils/currency';
 import { cn } from '@/utils/cn';
 import type { DebtDirection } from '@/types/finance';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 /** Add money the user owes (a loan, credit) or money they lent someone. */
 export default function NewDebtScreen() {
   const colors = useThemeColors();
+  const { t } = useT();
   const loadAll = useFinanceStore((s) => s.loadAll);
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const [direction, setDirection] = useState<DebtDirection>('i_owe');
@@ -35,14 +37,14 @@ export default function NewDebtScreen() {
       setError(message);
       Haptics.selectionAsync();
     };
-    if (!counterparty.trim()) return fail(isOwed ? 'Who owes you this money?' : 'Who do you owe this money to?');
-    if (amountMinor === null || amountMinor <= 0) return fail('Enter an amount greater than 0.');
-    if (paymentMinor === null || paymentMinor < 0) return fail('Enter the monthly payment as a number, or leave it empty.');
-    if (dueDay !== null && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) return fail('The due day is a day of the month, from 1 to 31.');
+    if (!counterparty.trim()) return fail(isOwed ? t('debts.whoOwesYou') : t('debts.whoYouOwe'));
+    if (amountMinor === null || amountMinor <= 0) return fail(t('debts.amountError'));
+    if (paymentMinor === null || paymentMinor < 0) return fail(t('debts.paymentError'));
+    if (dueDay !== null && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) return fail(t('debts.dueDayError'));
 
     setIsSaving(true);
     await debtsRepository.createDebt({
-      name: name.trim() || (isOwed ? 'Money lent' : 'Loan'),
+      name: name.trim() || (isOwed ? t('debts.defaultLent') : t('debts.defaultLoan')),
       direction,
       counterparty: counterparty.trim(),
       principalMinor: amountMinor,
@@ -60,24 +62,24 @@ export default function NewDebtScreen() {
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
       <ChipGroup<DebtDirection>
         options={[
-          { id: 'i_owe', label: 'I owe' },
-          { id: 'owed_to_me', label: 'Someone owes me' },
+          { id: 'i_owe', label: t('debts.iOwe') },
+          { id: 'owed_to_me', label: t('debts.someoneOwesMe') },
         ]}
         selectedId={direction}
         onSelect={setDirection}
       />
 
-      <Field label={isOwed ? 'Who owes you' : 'Who you owe'} value={counterparty} onChange={setCounterparty} placeholder={isOwed ? 'e.g. Paul, my cousin' : 'e.g. Afriland, Aunt Marie'} colors={colors} />
-      <Field label="What for (optional)" value={name} onChange={setName} placeholder={isOwed ? 'e.g. School fees loan' : 'e.g. Phone loan'} colors={colors} />
-      <Field label={`Amount (${currency})`} value={amountInput} onChange={setAmountInput} placeholder="0" colors={colors} numeric large />
-      <Field label="Monthly payment (optional)" value={paymentInput} onChange={setPaymentInput} placeholder="0" colors={colors} numeric />
+      <Field label={isOwed ? t('debts.whoOwesLabel') : t('debts.whoYouOweLabel')} value={counterparty} onChange={setCounterparty} placeholder={isOwed ? t('debts.owesPlaceholder') : t('debts.owePlaceholder')} colors={colors} />
+      <Field label={t('debts.whatFor')} value={name} onChange={setName} placeholder={isOwed ? t('debts.lentPlaceholder') : t('debts.loanPlaceholder')} colors={colors} />
+      <Field label={t('debts.amount', { currency })} value={amountInput} onChange={setAmountInput} placeholder="0" colors={colors} numeric large />
+      <Field label={t('debts.monthlyPayment')} value={paymentInput} onChange={setPaymentInput} placeholder="0" colors={colors} numeric />
       <View className="gap-sm">
-        <Field label="Due day each month (optional)" value={dueDayInput} onChange={setDueDayInput} placeholder="e.g. 25" colors={colors} numeric />
-        <Caption>With a due day, F-AI reminds you 3 days before in Alerts.</Caption>
+        <Field label={t('debts.dueDay')} value={dueDayInput} onChange={setDueDayInput} placeholder={t('debts.dueDayPlaceholder')} colors={colors} numeric />
+        <Caption>{t('debts.dueDayHint')}</Caption>
       </View>
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
-      <Button label={isSaving ? 'Saving…' : 'Save debt'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
+      <Button label={isSaving ? t('common.saving') : t('debts.save')} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </FormScrollView>
   );
 }

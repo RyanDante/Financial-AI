@@ -12,6 +12,7 @@ import { BodySmall, Caption, IconCircle, Overline, Title } from '@/components/ui
 import { useThemeColors } from '@/constants/theme';
 import { motion, useReducedMotion } from '@/constants/motion';
 import type { Recommendation } from '@/features/recommendations/recommendations';
+import { useT } from '@/i18n';
 
 const AUTO_ADVANCE_MS = 6000;
 const CARD_HEIGHT = 148;
@@ -123,6 +124,7 @@ export function RecommendationCarousel({ items, onAddExpense }: RecommendationCa
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
+  const { t } = useT();
   if (!item) return null;
 
   return (
@@ -134,8 +136,8 @@ export function RecommendationCarousel({ items, onAddExpense }: RecommendationCa
           style={{ height: CARD_HEIGHT }}
           accessible
           accessibilityRole="adjustable"
-          accessibilityLabel="Suggestions"
-          accessibilityValue={{ text: `${safeIndex + 1} of ${count}. ${item.reason}: ${item.title}. ${item.detail}` }}
+          accessibilityLabel={t('carousel.label')}
+          accessibilityValue={{ text: t('carousel.value', { index: safeIndex + 1, count, reason: item.reason, title: item.title, detail: item.detail }) }}
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
           onAccessibilityAction={(e) => goTo(safeIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1), true)}
         >
@@ -162,12 +164,12 @@ export function RecommendationCarousel({ items, onAddExpense }: RecommendationCa
         <Pressable
           onPress={() => onAddExpense(item)}
           accessibilityRole="button"
-          accessibilityLabel={`Add ${item.title} as an expense`}
+          accessibilityLabel={t('carousel.addA11y', { title: item.title })}
           hitSlop={8}
           className="min-h-[44px] flex-row items-center gap-xs"
         >
           <Ionicons name="add-circle-outline" size={16} color={colors['accent-secondary']} />
-          <Caption className="font-sans-semibold text-accent-secondary">Add as expense</Caption>
+          <Caption className="font-sans-semibold text-accent-secondary">{t('carousel.add')}</Caption>
         </Pressable>
       </View>
     </View>

@@ -1,15 +1,8 @@
 import { Pressable, ScrollView } from 'react-native';
 import { Label } from '@/components/ui';
+import { useT, type MessageKey } from '@/i18n';
 
-const SUGGESTIONS = [
-  "What's my balance?",
-  'Where is my money going?',
-  'Can I spend 100,000 on a new phone?',
-  'How much can I spend per day until payday?',
-  'How are my goals doing?',
-  'Which subscriptions cost me the most?',
-  'Forecast my balance in 6 months',
-];
+const SUGGESTIONS: MessageKey[] = ['prompt.balance', 'prompt.whereMoney', 'prompt.phone', 'prompt.perDay', 'prompt.goals', 'prompt.subscriptions', 'prompt.forecast'];
 
 interface SuggestedPromptsProps {
   onSelect: (prompt: string) => void;
@@ -18,9 +11,10 @@ interface SuggestedPromptsProps {
 
 /** One-tap questions, in a row pinned above the composer so they never scroll away. */
 export function SuggestedPrompts({ onSelect, disabled }: SuggestedPromptsProps) {
+  const { t } = useT();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerClassName="gap-sm px-lg">
-      {SUGGESTIONS.map((suggestion) => (
+      {SUGGESTIONS.map((key) => t(key)).map((suggestion) => (
         <Pressable
           key={suggestion}
           onPress={() => onSelect(suggestion)}

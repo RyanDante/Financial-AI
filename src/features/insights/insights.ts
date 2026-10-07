@@ -1,5 +1,6 @@
 import { calculateMonthlySpending, type CategorySpending } from '@/finance/calculations';
 import type { Transaction } from '@/types/finance';
+import { categoryLabel, t } from '@/i18n';
 
 export interface BreakdownRow {
   key: string;
@@ -22,14 +23,14 @@ export function toBreakdownRows(spending: CategorySpending[], limit = 5): Breakd
   const rest = ranked.slice(limit);
   const rows: Omit<BreakdownRow, 'barRatio'>[] = top.map((s) => ({
     key: s.categoryId ?? 'uncategorized',
-    label: s.categoryName,
+    label: categoryLabel(s.categoryName),
     totalMinor: s.totalMinor,
     percentage: s.percentage,
   }));
   if (rest.length > 0) {
     rows.push({
       key: 'other',
-      label: `Other (${rest.length})`,
+      label: t('insights.other', { count: rest.length }),
       totalMinor: rest.reduce((sum, s) => sum + s.totalMinor, 0),
       percentage: rest.reduce((sum, s) => sum + s.percentage, 0),
     });

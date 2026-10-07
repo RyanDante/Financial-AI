@@ -7,6 +7,7 @@ import type { BudgetCategory, Category, Debt, Goal, Transaction } from '@/types/
 import { nextDebtDueDate } from '@/features/allowance/allowance';
 import { calendarDaysUntil } from '@/utils/months';
 import { formatDue, type BillItem } from '@/features/bills/bills';
+import { categoryLabel, t, tn } from '@/i18n';
 
 export type AlertSeverity = 'danger' | 'warning';
 
@@ -70,8 +71,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: 'available-negative',
       severity: 'danger',
       icon: 'wallet-outline',
-      title: 'Nothing safe to spend',
-      detail: `Bills and your reserve exceed your balance by ${formatMoney(Math.abs(availableMinor), input.currency)}.`,
+      title: t('alert.negativeTitle'),
+      detail: t('alert.negativeDetail', { amount: formatMoney(Math.abs(availableMinor), input.currency) }),
       href: '/',
     });
   }
@@ -88,8 +89,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: `budget-${limit.id}`,
       severity: 'danger',
       icon: 'alert-circle-outline',
-      title: `${categoryById.get(limit.categoryId)?.name ?? 'A category'} is over budget`,
-      detail: `${formatMoney(Math.abs(remainingMinor), input.currency)} over budget this month.`,
+      title: t('alert.overBudgetTitle', { category: categoryLabel(categoryById.get(limit.categoryId)?.name ?? t('alert.aCategory')) }),
+      detail: t('alert.overBudgetDetail', { amount: formatMoney(Math.abs(remainingMinor), input.currency) }),
       href: '/budgets',
     });
   }
@@ -102,8 +103,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: `goal-${goal.id}`,
       severity: 'warning',
       icon: 'flag-outline',
-      title: `${goal.name} is past its deadline`,
-      detail: `${formatMoney(progress.remainingMinor, goal.currency)} still to go.`,
+      title: t('alert.goalLateTitle', { goal: goal.name }),
+      detail: t('alert.goalLateDetail', { amount: formatMoney(progress.remainingMinor, goal.currency) }),
       href: '/goals',
     });
   }
@@ -114,8 +115,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: `bill-${bill.id}`,
       severity: 'warning',
       icon: 'calendar-outline',
-      title: `${bill.name}: ${formatDue(bill).toLowerCase()}`,
-      detail: `${formatMoney(bill.amountMinor, bill.currency)} to pay.`,
+      title: t('alert.billTitle', { bill: bill.name, due: formatDue(bill).toLowerCase() }),
+      detail: t('alert.toPay', { amount: formatMoney(bill.amountMinor, bill.currency) }),
       href: '/bills',
     });
   }
@@ -126,13 +127,13 @@ export function buildAlerts(input: AlertInput): Alert[] {
     if (!due) continue;
     const inDays = calendarDaysUntil(due, asOf);
     if (inDays > BILL_ALERT_DAYS) continue;
-    const when = inDays === 0 ? 'today' : inDays === 1 ? 'tomorrow' : `in ${inDays} days`;
+    const when = inDays === 0 ? t('alert.when.today') : inDays === 1 ? t('alert.when.tomorrow') : tn('alert.when.inDays', inDays);
     const who = debt.counterparty ?? debt.name;
     const amount = formatMoney(debt.minimumPaymentMinor > 0 ? Math.min(debt.minimumPaymentMinor, debt.remainingMinor) : debt.remainingMinor, debt.currency);
     alerts.push(
       debt.direction === 'i_owe'
-        ? { id: `debt-${debt.id}`, severity: 'warning', icon: 'cash-outline', title: `Payment to ${who} due ${when}`, detail: `${amount} to pay.`, href: '/debts' }
-        : { id: `debt-${debt.id}`, severity: 'warning', icon: 'cash-outline', title: `${who} is due to pay you back ${when}`, detail: `${amount} expected.`, href: '/debts' },
+        ? { id: `debt-${debt.id}`, severity: 'warning', icon: 'cash-outline', title: t('alert.debtPayTitle', { who, when }), detail: t('alert.toPay', { amount }), href: '/debts' }
+        : { id: `debt-${debt.id}`, severity: 'warning', icon: 'cash-outline', title: t('alert.debtOwedTitle', { who, when }), detail: t('alert.expected', { amount }), href: '/debts' },
     );
   }
 
@@ -141,8 +142,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: 'sync-error',
       severity: 'warning',
       icon: 'cloud-offline-outline',
-      title: 'Sync failed',
-      detail: 'Your data is safe on this phone. It will retry on the next sync.',
+      title: t('alert.syncFailedTitle'),
+      detail: t('alert.syncFailedDetail'),
       href: '/settings',
     });
   } else if (input.syncStatus === 'blocked') {
@@ -150,8 +151,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: 'sync-blocked',
       severity: 'warning',
       icon: 'lock-closed-outline',
-      title: 'Sync blocked',
-      detail: input.syncErrorMessage ?? 'Open Settings to resume backups.',
+      title: t('alert.syncBlockedTitle'),
+      detail: input.syncErrorMessage ?? t('alert.syncBlockedDetail'),
       href: '/settings',
     });
   }
@@ -161,7 +162,7 @@ export function buildAlerts(input: AlertInput): Alert[] {
       id: 'attachment-upload',
       severity: 'warning',
       icon: 'cloud-upload-outline',
-      title: 'Attachments not backed up',
+      title: t('alert.attachmentsTitle'),
       detail: input.attachmentUploadError,
       href: '/settings',
     });

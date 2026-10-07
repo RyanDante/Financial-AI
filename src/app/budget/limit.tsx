@@ -9,11 +9,13 @@ import { useThemeColors } from '@/constants/theme';
 import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from '@/constants/currencies';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { categoryLabel, useT } from '@/i18n';
 
 /** Modal for changing one category's limit in this month's budget. */
 export default function BudgetLimitScreen() {
   const params = useLocalSearchParams<{ budgetCategoryId: string; categoryId: string; limitMinor: string; currency: string }>();
   const colors = useThemeColors();
+  const { t } = useT();
   const category = useFinanceStore((s) => s.categories.find((c) => c.id === params.categoryId));
   const loadAll = useFinanceStore((s) => s.loadAll);
   const currency: CurrencyCode = params.currency && isCurrencyCode(params.currency) ? params.currency : DEFAULT_CURRENCY;
@@ -25,7 +27,7 @@ export default function BudgetLimitScreen() {
   const handleSave = async () => {
     const limitMinor = parseMoneyInput(limitInput, currency);
     if (limitMinor === null || limitMinor <= 0) {
-      setError('Enter a limit greater than 0.');
+      setError(t('limit.error'));
       Haptics.selectionAsync();
       return;
     }
@@ -40,11 +42,11 @@ export default function BudgetLimitScreen() {
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
-      <Stack.Screen options={{ title: `${category?.name ?? 'Category'} limit` }} />
-      <Body className="text-text-secondary">Current limit: {formatMoney(currentLimitMinor, currency)} this month.</Body>
+      <Stack.Screen options={{ title: t('limit.title', { category: category ? categoryLabel(category.name) : t('limit.category') }) }} />
+      <Body className="text-text-secondary">{t('limit.current', { amount: formatMoney(currentLimitMinor, currency) })}</Body>
 
       <View className="gap-sm">
-        <Label>Monthly limit ({currency})</Label>
+        <Label>{t('limit.monthly', { currency })}</Label>
         <TextInput
           value={limitInput}
           onChangeText={setLimitInput}
@@ -57,7 +59,7 @@ export default function BudgetLimitScreen() {
         {error ? <Caption className="text-danger">{error}</Caption> : null}
       </View>
 
-      <Button label={isSaving ? 'Saving…' : 'Save limit'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
+      <Button label={isSaving ? t('common.saving') : t('limit.save')} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </FormScrollView>
   );
 }

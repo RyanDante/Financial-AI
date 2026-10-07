@@ -14,6 +14,7 @@ import type { FileUpload } from '@/types/files';
 import type { Transaction } from '@/types/finance';
 import { useThemeColors } from '@/constants/theme';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { categoryLabel, getLocale, useT } from '@/i18n';
 
 const OWNER_ENTITY_TYPE = 'transaction';
 
@@ -21,6 +22,7 @@ export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { categories, accounts, deleteTransaction } = useFinanceStore();
   const authUser = useAuthStore((s) => s.user);
+  const { t } = useT();
 
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [attachments, setAttachments] = useState<FileUpload[]>([]);
@@ -51,10 +53,10 @@ export default function TransactionDetailScreen() {
   const handleDelete = () => {
     if (!id) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert('Delete this transaction?', 'It will be removed from your balance, budgets and history.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('txDetail.deleteTitle'), t('txDetail.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteTransaction(id);
@@ -87,7 +89,7 @@ export default function TransactionDetailScreen() {
   if (!transaction) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <Caption>Loading…</Caption>
+        <Caption>{t('common.loading')}</Caption>
       </View>
     );
   }
@@ -108,50 +110,52 @@ export default function TransactionDetailScreen() {
           tone={isIncome ? 'success' : isTransfer ? 'accentSecondary' : 'primary'}
           forceSign={isIncome}
         />
-        <Heading>{isTransfer ? `${account?.name ?? 'Account'} → ${toAccount?.name ?? 'Account'}` : transaction.merchant || transaction.description || category?.name || 'Transaction'}</Heading>
+        <Heading>{isTransfer
+            ? `${account?.name ?? t('txForm.account')} → ${toAccount?.name ?? t('txForm.account')}`
+            : transaction.merchant || transaction.description || (category ? categoryLabel(category.name) : t('tx.transaction'))}</Heading>
       </View>
 
       <Card className="gap-sm">
         {isTransfer ? (
           <>
-            <DetailRow label="Type" value="Transfer" />
-            <DetailRow label="From" value={account?.name ?? 'Unknown'} />
-            <DetailRow label="To" value={toAccount?.name ?? 'Unknown'} />
+            <DetailRow label={t('txDetail.type')} value={t('type.transfer')} />
+            <DetailRow label={t('txForm.from')} value={account?.name ?? t('txDetail.unknown')} />
+            <DetailRow label={t('txForm.to')} value={toAccount?.name ?? t('txDetail.unknown')} />
           </>
         ) : (
           <>
-            <DetailRow label="Category" value={category?.name ?? 'Uncategorized'} />
-            <DetailRow label="Account" value={account?.name ?? 'Unknown'} />
+            <DetailRow label={t('txForm.category')} value={category ? categoryLabel(category.name) : t('tx.uncategorized')} />
+            <DetailRow label={t('txForm.account')} value={account?.name ?? t('txDetail.unknown')} />
           </>
         )}
-        <DetailRow label="Date" value={new Date(transaction.occurredAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })} />
-        {transaction.notes ? <DetailRow label="Notes" value={transaction.notes} /> : null}
+        <DetailRow label={t('txForm.date')} value={new Date(transaction.occurredAt).toLocaleDateString(getLocale(), { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })} />
+        {transaction.notes ? <DetailRow label={t('txDetail.notes')} value={transaction.notes} /> : null}
       </Card>
 
       <View className="gap-sm">
         <View className="flex-row items-center justify-between">
-          <Label>Attachments</Label>
+          <Label>{t('txDetail.attachments')}</Label>
         </View>
 
         <Card>
           {attachments.length === 0 ? (
-            <EmptyState icon="receipt-outline" title="No attachments" description="Attach a receipt or document for this transaction." />
+            <EmptyState icon="receipt-outline" title={t('txDetail.noAttachments')} description={t('txDetail.noAttachmentsHint')} />
           ) : (
             attachments.map((attachment) => <AttachmentRow key={attachment.id} attachment={attachment} onRetry={handleRetry} />)
           )}
         </Card>
 
         <View className="flex-row gap-sm">
-          <AttachButton icon="camera-outline" label="Camera" disabled={isAttaching} onPress={() => handlePick(takePhoto)} />
-          <AttachButton icon="image-outline" label="Photo" disabled={isAttaching} onPress={() => handlePick(pickImageFromLibrary)} />
-          <AttachButton icon="document-outline" label="Document" disabled={isAttaching} onPress={() => handlePick(pickDocument)} />
+          <AttachButton icon="camera-outline" label={t('txForm.camera')} disabled={isAttaching} onPress={() => handlePick(takePhoto)} />
+          <AttachButton icon="image-outline" label={t('txDetail.photo')} disabled={isAttaching} onPress={() => handlePick(pickImageFromLibrary)} />
+          <AttachButton icon="document-outline" label={t('txDetail.document')} disabled={isAttaching} onPress={() => handlePick(pickDocument)} />
         </View>
       </View>
 
       <View className="flex-row gap-sm pt-sm">
-        <Button label="Delete" variant="danger" className="flex-1" onPress={handleDelete} />
+        <Button label={t('common.delete')} variant="danger" className="flex-1" onPress={handleDelete} />
         <Button
-          label="Edit"
+          label={t('common.edit')}
           variant="secondary"
           className="flex-1"
           onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}

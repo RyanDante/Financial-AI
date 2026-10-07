@@ -1,5 +1,6 @@
 import type { LLMClient, LLMImage, LLMToolSpec } from '@/ai/llm/types';
 import { LLMError } from '@/ai/llm/types';
+import { t } from '@/i18n';
 
 const TOOL_NAME = 'record_receipt';
 
@@ -53,15 +54,15 @@ export async function scanReceipt(client: LLMClient, image: LLMImage, categories
     timeoutMs: 60_000,
   });
   const call = response.toolCalls.find((c) => c.name === TOOL_NAME);
-  if (!call) throw new LLMError('The AI could not read this receipt.', false);
+  if (!call) throw new LLMError(t('receipt.unreadable'), false);
   return toReceiptScan(call.input, categories);
 }
 
 /** Validates the model's answer: a positive total is required, the date can't be in the future. */
 export function toReceiptScan(input: Record<string, unknown>, categories: ReceiptCategory[], now = new Date()): ReceiptScan {
-  if (input.isReceipt === false) throw new LLMError("That doesn't look like a receipt.", false);
+  if (input.isReceipt === false) throw new LLMError(t('receipt.notReceipt'), false);
   const total = typeof input.total === 'number' ? input.total : typeof input.total === 'string' ? Number(input.total.replace(/[\s,]/g, '')) : NaN;
-  if (!Number.isFinite(total) || total <= 0) throw new LLMError("The total couldn't be read from this receipt.", false);
+  if (!Number.isFinite(total) || total <= 0) throw new LLMError(t('receipt.noTotal'), false);
 
   const merchant = typeof input.merchant === 'string' && input.merchant.trim() ? input.merchant.trim() : null;
   const currency = typeof input.currency === 'string' && /^[A-Za-z]{3}$/.test(input.currency.trim()) ? input.currency.trim().toUpperCase() : null;

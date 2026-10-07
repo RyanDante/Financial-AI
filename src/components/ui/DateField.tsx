@@ -4,6 +4,7 @@ import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/d
 import { useColorScheme } from 'nativewind';
 import { useThemeColors } from '@/constants/theme';
 import { Body, Label } from './Typography';
+import { getLocale, useT } from '@/i18n';
 
 interface DateFieldProps {
   label: string;
@@ -19,6 +20,7 @@ interface DateFieldProps {
  * picker on iOS. Only the date is chosen; the time of day is kept.
  */
 export function DateField({ label, value, onChange, minimumDate, maximumDate }: DateFieldProps) {
+  const { t } = useT();
   const colors = useThemeColors();
   const { colorScheme } = useColorScheme();
 
@@ -65,10 +67,10 @@ export function DateField({ label, value, onChange, minimumDate, maximumDate }: 
       <Pressable
         onPress={open}
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}. Change date`}
+        accessibilityLabel={t('common.changeDate', { label, date: value.toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric' }) })}
         className="min-h-[48px] flex-row items-center justify-between rounded-md border border-border-strong bg-surface px-md py-md"
       >
-        <Body>{value.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</Body>
+        <Body>{value.toLocaleDateString(getLocale(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</Body>
         <Ionicons name="calendar-outline" size={18} color={colors['text-secondary']} />
       </Pressable>
     </View>

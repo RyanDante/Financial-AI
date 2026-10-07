@@ -1,3 +1,4 @@
+import { getLocale } from '@/i18n/language';
 /**
  * Month keys are `YYYY-MM` in local time, the same format the finance engine
  * compares against `occurredAt.slice(0, 7)` (src/finance/calculations/spending.ts).
@@ -35,16 +36,16 @@ export function isInMonth(isoDate: string, month: MonthKey): boolean {
   return isoDate.slice(0, 7) === month;
 }
 
-/** "September 2026" (or the device locale's equivalent). */
+/** "September 2026" ("septembre 2026" in French). */
 export function formatMonthLabel(month: MonthKey): string {
   const [year, monthIndex] = parseMonth(month);
-  return new Date(year, monthIndex, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return new Date(year, monthIndex, 1).toLocaleDateString(getLocale(), { month: 'long', year: 'numeric' });
 }
 
 /** Short month name for chart labels ("Sep"). */
 export function formatMonthShort(month: MonthKey): string {
   const [year, monthIndex] = parseMonth(month);
-  return new Date(year, monthIndex, 1).toLocaleDateString(undefined, { month: 'short' });
+  return new Date(year, monthIndex, 1).toLocaleDateString(getLocale(), { month: 'short' });
 }
 
 /** Whole days from `from` to `to` (negative when `to` is earlier). */

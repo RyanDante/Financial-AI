@@ -2,6 +2,7 @@ import { nextDebtDueDate } from '@/features/allowance/allowance';
 import type { BillItem } from '@/features/bills/bills';
 import { formatMoney } from '@/utils/currency';
 import type { Debt } from '@/types/finance';
+import { categoryLabel, t } from '@/i18n';
 
 export interface PlannedReminder {
   id: string;
@@ -34,8 +35,8 @@ export function planReminders(bills: BillItem[], debts: Debt[], asOf = new Date(
     if (!bill.nextDue) continue;
     planned.push({
       id: `bill-${bill.id}`,
-      title: `${bill.name} is due tomorrow`,
-      body: `${formatMoney(bill.amountMinor, bill.currency)}. Make sure it's set aside.`,
+      title: t('reminder.billTitle', { bill: bill.name }),
+      body: t('reminder.billBody', { amount: formatMoney(bill.amountMinor, bill.currency) }),
       date: dayBeforeAt9(bill.nextDue),
     });
   }
@@ -47,8 +48,8 @@ export function planReminders(bills: BillItem[], debts: Debt[], asOf = new Date(
     const amount = debt.minimumPaymentMinor > 0 ? Math.min(debt.minimumPaymentMinor, debt.remainingMinor) : debt.remainingMinor;
     planned.push({
       id: `debt-${debt.id}`,
-      title: `Payment to ${debt.counterparty ?? debt.name} is due tomorrow`,
-      body: `${formatMoney(amount, debt.currency)} to pay.`,
+      title: t('reminder.debtTitle', { who: debt.counterparty ?? debt.name }),
+      body: t('reminder.debtBody', { amount: formatMoney(amount, debt.currency) }),
       date: dayBeforeAt9(due),
     });
   }
@@ -84,10 +85,12 @@ export function budgetWarnings(usage: BudgetUsage[], month: string, alreadySent:
       const over = u.spentMinor > u.limitMinor;
       return {
         key,
-        title: over ? `${u.categoryName} is over budget` : `${u.categoryName} budget is ${Math.floor((u.spentMinor / u.limitMinor) * 100)}% used`,
+        title: over
+          ? t('reminder.overBudgetTitle', { category: categoryLabel(u.categoryName) })
+          : t('reminder.usedTitle', { category: categoryLabel(u.categoryName), percent: Math.floor((u.spentMinor / u.limitMinor) * 100) }),
         body: over
-          ? `${formatMoney(u.spentMinor - u.limitMinor, u.currency)} over this month.`
-          : `${formatMoney(u.limitMinor - u.spentMinor, u.currency)} left for the rest of the month.`,
+          ? t('reminder.overBody', { amount: formatMoney(u.spentMinor - u.limitMinor, u.currency) })
+          : t('reminder.leftBody', { amount: formatMoney(u.limitMinor - u.spentMinor, u.currency) }),
       };
     });
 }

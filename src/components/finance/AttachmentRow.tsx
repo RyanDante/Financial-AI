@@ -4,6 +4,7 @@ import { Body, Caption } from '@/components/ui';
 import { getUploadStatusLabel, isImageAttachment } from '@/features/attachments/attachments.mapper';
 import { useThemeColors, type ColorKey } from '@/constants/theme';
 import type { FileUpload } from '@/types/files';
+import { useT } from '@/i18n';
 
 const STATUS_COLOR: Record<FileUpload['status'], ColorKey> = {
   pending: 'text-muted',
@@ -25,6 +26,7 @@ interface AttachmentRowProps {
 /** One attachment on a transaction: a thumbnail (if it's an image, always from the local file so it's viewable offline), filename, and upload status. */
 export function AttachmentRow({ attachment, onRetry }: AttachmentRowProps) {
   const colors = useThemeColors();
+  const { t } = useT();
   const statusColor = colors[STATUS_COLOR[attachment.status]];
 
   return (
@@ -47,7 +49,7 @@ export function AttachmentRow({ attachment, onRetry }: AttachmentRowProps) {
 
       {attachment.status === 'failed' && onRetry ? (
         <Pressable onPress={() => onRetry(attachment)}>
-          <Caption className="text-accent-secondary">Retry</Caption>
+          <Caption className="text-accent-secondary">{t('attachment.retry')}</Caption>
         </Pressable>
       ) : null}
     </View>

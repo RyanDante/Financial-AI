@@ -21,6 +21,8 @@ import { LockScreen } from '@/components/ui/LockScreen';
 import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
 import { configureNotifications, onReminderTapped, syncReminders } from '@/features/reminders/reminders.service';
 import { KeyboardRoot } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
+import { loadLanguage } from '@/i18n/languageSettings';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 configureNotifications();
@@ -39,11 +41,12 @@ export default function RootLayout() {
   const isLocked = useAppLockStore((s) => s.locked);
   const { colorScheme } = useColorScheme();
   const pageHeaderOptions = usePageHeaderOptions();
+  const { t } = useT();
 
   useEffect(() => {
     (async () => {
       await getDatabase();
-      await Promise.all([loadAll(), loadSettings(), loadTheme(), loadLock(), loadOnboarding()]);
+      await Promise.all([loadAll(), loadSettings(), loadTheme(), loadLock(), loadOnboarding(), loadLanguage()]);
       setIsDbReady(true);
     })();
     // Firebase Auth/Firestore calls here are independent of local readiness —
@@ -96,24 +99,24 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
               <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
-              <Stack.Screen name="transaction/[id]" options={{ title: 'Transaction' }} />
-              <Stack.Screen name="goal/[id]" options={{ title: 'Goal' }} />
-              <Stack.Screen name="alerts" options={{ title: 'Alerts' }} />
-              <Stack.Screen name="settings" options={{ title: 'Settings' }} />
-              <Stack.Screen name="bills/index" options={{ title: 'Bills & subscriptions' }} />
-              <Stack.Screen name="debts/index" options={{ title: 'Debts' }} />
-              <Stack.Screen name="income/index" options={{ title: 'Income & payday' }} />
-              <Stack.Screen name="transaction/new" options={modalOptions('Add transaction')} />
-              <Stack.Screen name="goal/new" options={modalOptions('New goal')} />
-              <Stack.Screen name="budget/limit" options={modalOptions('Budget limit')} />
-              <Stack.Screen name="account/edit" options={modalOptions('Account')} />
-              <Stack.Screen name="bills/new" options={modalOptions('Add a bill')} />
-              <Stack.Screen name="import/sms" options={modalOptions('Import from SMS')} />
-              <Stack.Screen name="debts/new" options={modalOptions('Add a debt')} />
-              <Stack.Screen name="debts/pay" options={modalOptions('Record a payment')} />
-              <Stack.Screen name="income/new" options={modalOptions('Add income')} />
-              <Stack.Screen name="ai/conversations" options={modalOptions('Your chats')} />
-              <Stack.Screen name="share" options={{ title: 'Shared to F-AI' }} />
+              <Stack.Screen name="transaction/[id]" options={{ title: t('nav.transaction') }} />
+              <Stack.Screen name="goal/[id]" options={{ title: t('nav.goal') }} />
+              <Stack.Screen name="alerts" options={{ title: t('nav.alerts') }} />
+              <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
+              <Stack.Screen name="bills/index" options={{ title: t('nav.bills') }} />
+              <Stack.Screen name="debts/index" options={{ title: t('nav.debts') }} />
+              <Stack.Screen name="income/index" options={{ title: t('nav.income') }} />
+              <Stack.Screen name="transaction/new" options={modalOptions(t('nav.addTransaction'))} />
+              <Stack.Screen name="goal/new" options={modalOptions(t('nav.newGoal'))} />
+              <Stack.Screen name="budget/limit" options={modalOptions(t('nav.budgetLimit'))} />
+              <Stack.Screen name="account/edit" options={modalOptions(t('nav.account'))} />
+              <Stack.Screen name="bills/new" options={modalOptions(t('nav.addBill'))} />
+              <Stack.Screen name="import/sms" options={modalOptions(t('nav.importSms'))} />
+              <Stack.Screen name="debts/new" options={modalOptions(t('nav.addDebt'))} />
+              <Stack.Screen name="debts/pay" options={modalOptions(t('nav.recordPayment'))} />
+              <Stack.Screen name="income/new" options={modalOptions(t('nav.addIncome'))} />
+              <Stack.Screen name="ai/conversations" options={modalOptions(t('nav.yourChats'))} />
+              <Stack.Screen name="share" options={{ title: t('nav.shared') }} />
             </Stack>
             {isLocked ? <LockScreen /> : null}
           </View>

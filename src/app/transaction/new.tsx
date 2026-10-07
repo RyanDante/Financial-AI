@@ -19,6 +19,7 @@ import { cn } from '@/utils/cn';
 import type { Transaction, TransactionType } from '@/types/finance';
 import { useThemeColors } from '@/constants/theme';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { categoryLabel, useT, type MessageKey } from '@/i18n';
 
 /**
  * Add a transaction, or edit one when opened with `?id=` (from the
@@ -27,13 +28,14 @@ import { FormScrollView } from '@/components/keyboard/keyboard';
  * money between two of your accounts: it changes both balances but is not
  * spending or income, so it has no category.
  */
-const TYPE_LABELS: Record<TransactionType, string> = { expense: 'Expense', income: 'Income', transfer: 'Transfer' };
+const TYPE_LABELS: Record<TransactionType, MessageKey> = { expense: 'type.expense', income: 'type.income', transfer: 'type.transfer' };
 
 export default function NewTransactionScreen() {
   // `id` opens the form in edit mode; `categoryId`/`merchant` prefill a new expense (from Home's suggestions).
   const { id, categoryId: prefillCategoryId, merchant: prefillMerchant } = useLocalSearchParams<{ id?: string; categoryId?: string; merchant?: string }>();
   const isEditing = Boolean(id);
   const colors = useThemeColors();
+  const { t } = useT();
   const { accounts, categories, addTransaction, updateTransaction } = useFinanceStore();
   const defaultCurrency = useSettingsStore((s) => s.defaultCurrency);
   const [existing, setExisting] = useState<Transaction | null>(null);
@@ -98,13 +100,13 @@ export default function NewTransactionScreen() {
       if (result.date) setOccurredAt(new Date(result.date));
       setScanNote(
         result.currency && result.currency !== currency
-          ? { tone: 'warning', text: `This receipt is in ${result.currency}, but this transaction is in ${currency}. Convert the amount before saving.` }
-          : { tone: 'info', text: 'Filled in from your receipt. Check the amount, category and date before saving.' },
+          ? { tone: 'warning', text: t('txForm.receiptOtherCurrency', { receipt: result.currency, currency }) }
+          : { tone: 'info', text: t('txForm.receiptFilled') },
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (scanError) {
       if (__DEV__) console.warn('[receipt] scan failed', scanError);
-      setScanNote({ tone: 'danger', text: `${scanError instanceof Error ? scanError.message : 'The receipt could not be read.'} You can still enter it by hand.` });
+      setScanNote({ tone: 'danger', text: t('txForm.receiptFailed', { reason: scanError instanceof Error ? scanError.message : t('txForm.receiptUnreadable') }) });
     } finally {
       setIsScanning(false);
     }
@@ -113,15 +115,15 @@ export default function NewTransactionScreen() {
   const handleSave = async () => {
     const amountMinor = parseMoneyInput(amountInput, currency);
     if (amountMinor === null || amountMinor <= 0) {
-      setError('Enter an amount greater than 0.');
+      setError(t('txForm.amountError'));
       return;
     }
     if (!selectedAccountId) {
-      setError('Add an account in Settings first.');
+      setError(t('txForm.noAccount'));
       return;
     }
     if (isTransfer && (!transferAccountId || transferAccountId === selectedAccountId)) {
-      setError('Choose a different account to move the money to.');
+      setError(t('txForm.sameAccount'));
       return;
     }
 
@@ -152,28 +154,28 @@ export default function NewTransactionScreen() {
   if (isEditing && !existing) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <Caption>Loading…</Caption>
+        <Caption>{t('common.loading')}</Caption>
       </View>
     );
   }
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg">
-      <Stack.Screen options={{ title: isEditing ? 'Edit transaction' : 'Add transaction' }} />
+      <Stack.Screen options={{ title: isEditing ? t('nav.editTransaction') : t('nav.addTransaction') }} />
 
       <View className="flex-row gap-sm">
-        {types.map((t) => (
+        {types.map((option) => (
           <Pressable
-            key={t}
+            key={option}
             onPress={() => {
-              setType(t);
+              setType(option);
               setCategoryId(null);
             }}
             accessibilityRole="button"
-            accessibilityState={{ selected: type === t }}
-            className={cn('flex-1 items-center rounded-md border py-md', type === t ? 'border-accent bg-accent-muted' : 'border-border bg-surface')}
+            accessibilityState={{ selected: type === option }}
+            className={cn('flex-1 items-center rounded-md border py-md', type === option ? 'border-accent bg-accent-muted' : 'border-border bg-surface')}
           >
-            <Body className={type === t ? 'text-accent-secondary' : undefined}>{TYPE_LABELS[t]}</Body>
+            <Body className={type === option ? 'text-accent-secondary' : undefined}>{t(TYPE_LABELS[option])}</Body>
           </Pressable>
         ))}
       </View>
@@ -182,21 +184,21 @@ export default function NewTransactionScreen() {
         <View className="gap-sm rounded-md border border-dashed border-border-strong p-md">
           <View className="flex-row items-center gap-sm">
             <Ionicons name="receipt-outline" size={20} color={colors['accent-secondary']} />
-            <Body className="flex-1">Scan a receipt</Body>
+            <Body className="flex-1">{t('txForm.scan')}</Body>
             {isScanning ? <ActivityIndicator size="small" color={colors['accent-secondary']} /> : null}
           </View>
           <View className="flex-row gap-sm">
             <View className="flex-1">
-              <Button label="Camera" variant="secondary" onPress={() => scan(takePhoto)} disabled={isScanning} />
+              <Button label={t('txForm.camera')} variant="secondary" onPress={() => scan(takePhoto)} disabled={isScanning} />
             </View>
             <View className="flex-1">
-              <Button label="Photos" variant="secondary" onPress={() => scan(pickImageFromLibrary)} disabled={isScanning} />
+              <Button label={t('txForm.photos')} variant="secondary" onPress={() => scan(pickImageFromLibrary)} disabled={isScanning} />
             </View>
           </View>
           {scanNote ? (
             <Caption className={scanNote.tone === 'danger' ? 'text-danger' : scanNote.tone === 'warning' ? 'text-warning' : undefined}>{scanNote.text}</Caption>
           ) : (
-            <Caption>The photo is sent to {providerLabel()} to read the total, shop and date.</Caption>
+            <Caption>{t('txForm.scanPrivacy', { provider: providerLabel() })}</Caption>
           )}
           {receipt ? (
             <Pressable
@@ -206,14 +208,14 @@ export default function NewTransactionScreen() {
               className="min-h-[44px] flex-row items-center gap-sm"
             >
               <Ionicons name={attachReceipt ? 'checkbox' : 'square-outline'} size={20} color={attachReceipt ? colors.accent : colors['text-muted']} />
-              <Caption>Attach the receipt photo to this transaction</Caption>
+              <Caption>{t('txForm.attachReceipt')}</Caption>
             </Pressable>
           ) : null}
         </View>
       ) : null}
 
       <View className="gap-sm">
-        <Label>Amount ({currency})</Label>
+        <Label>{t('txForm.amount', { currency })}</Label>
         <TextInput
           value={amountInput}
           onChangeText={setAmountInput}
@@ -226,34 +228,34 @@ export default function NewTransactionScreen() {
 
       {accounts.length > 1 ? (
         <View className="gap-sm">
-          <Label>{isTransfer ? 'From' : 'Account'}</Label>
+          <Label>{isTransfer ? t('txForm.from') : t('txForm.account')}</Label>
           <ChipGroup options={accounts.map((a) => ({ id: a.id, label: a.name }))} selectedId={selectedAccountId} onSelect={setAccountId} />
         </View>
       ) : null}
 
       {isTransfer ? (
         <View className="gap-sm">
-          <Label>To</Label>
+          <Label>{t('txForm.to')}</Label>
           <ChipGroup
             options={accounts.filter((a) => a.id !== selectedAccountId).map((a) => ({ id: a.id, label: a.name }))}
             selectedId={transferAccountId}
             onSelect={setTransferAccountId}
           />
-          <Caption>Moves money between your accounts. It isn&rsquo;t counted as spending or income.</Caption>
+          <Caption>{t('txForm.transferHint')}</Caption>
         </View>
       ) : (
         <>
           <View className="gap-sm">
-            <Label>Category</Label>
-            <ChipGroup options={relevantCategories.map((c) => ({ id: c.id, label: c.name }))} selectedId={categoryId} onSelect={setCategoryId} />
+            <Label>{t('txForm.category')}</Label>
+            <ChipGroup options={relevantCategories.map((c) => ({ id: c.id, label: categoryLabel(c.name) }))} selectedId={categoryId} onSelect={setCategoryId} />
           </View>
 
           <View className="gap-sm">
-            <Label>Merchant / note (optional)</Label>
+            <Label>{t('txForm.merchant')}</Label>
             <TextInput
               value={merchant}
               onChangeText={setMerchant}
-              placeholder="e.g. Market, Landlord, Employer"
+              placeholder={t('txForm.merchantPlaceholder')}
               placeholderTextColor={colors['text-muted']}
               className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
             />
@@ -261,11 +263,11 @@ export default function NewTransactionScreen() {
         </>
       )}
 
-      <DateField label="Date" value={occurredAt} onChange={setOccurredAt} maximumDate={new Date()} />
+      <DateField label={t('txForm.date')} value={occurredAt} onChange={setOccurredAt} maximumDate={new Date()} />
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <Button label={isSaving ? 'Saving…' : 'Save transaction'} className="mt-sm" onPress={handleSave} disabled={isSaving} />
+      <Button label={isSaving ? t('common.saving') : t('txForm.save')} className="mt-sm" onPress={handleSave} disabled={isSaving} />
     </FormScrollView>
   );
 }

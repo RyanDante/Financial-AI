@@ -8,10 +8,12 @@ import { useThemeColors } from '@/constants/theme';
 import { useAIStore } from '@/store/aiStore';
 import { cn } from '@/utils/cn';
 import type { AIConversation } from '@/types/ai';
+import { getLocale, useT } from '@/i18n';
 
 /** Past copilot chats: open one to continue it, or delete it. */
 export default function ConversationsScreen() {
   const { conversations, conversationId, loadConversations, openConversation, deleteConversation, newChat } = useAIStore();
+  const { t } = useT();
 
   useEffect(() => {
     loadConversations();
@@ -23,10 +25,10 @@ export default function ConversationsScreen() {
   };
 
   const confirmDelete = (conversation: AIConversation) => {
-    Alert.alert('Delete this chat?', conversation.title ?? 'Untitled chat', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('chats.deleteConfirm'), conversation.title ?? t('chats.untitled'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           deleteConversation(conversation.id);
@@ -39,14 +41,14 @@ export default function ConversationsScreen() {
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-sm p-lg pb-3xl">
       <Button
-        label="New chat"
+        label={t('chats.new')}
         onPress={() => {
           newChat();
           router.back();
         }}
       />
       {conversations.length === 0 ? (
-        <EmptyState icon="chatbubbles-outline" title="No chats yet" description="Your questions to the copilot are kept here, on this phone." />
+        <EmptyState icon="chatbubbles-outline" title={t('chats.none')} description={t('chats.noneHint')} />
       ) : (
         conversations.map((conversation) => (
           <ConversationRow
@@ -64,14 +66,15 @@ export default function ConversationsScreen() {
 
 function ConversationRow({ conversation, isCurrent, onOpen, onDelete }: { conversation: AIConversation; isCurrent: boolean; onOpen: () => void; onDelete: () => void }) {
   const colors = useThemeColors();
-  const updated = new Date(conversation.updatedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const { t } = useT();
+  const updated = new Date(conversation.updatedAt).toLocaleString(getLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   return (
     <View className={cn('flex-row items-center rounded-md border bg-surface', isCurrent ? 'border-accent' : 'border-border')}>
-      <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Open chat: ${conversation.title ?? 'Untitled chat'}`} className="flex-1 gap-xs p-md">
-        <Body numberOfLines={1}>{conversation.title ?? 'Untitled chat'}</Body>
-        <Caption>{isCurrent ? `Open now · ${updated}` : updated}</Caption>
+      <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={t('chats.open', { title: conversation.title ?? t('chats.untitled') })} className="flex-1 gap-xs p-md">
+        <Body numberOfLines={1}>{conversation.title ?? t('chats.untitled')}</Body>
+        <Caption>{isCurrent ? t('chats.openNow', { date: updated }) : updated}</Caption>
       </Pressable>
-      <Pressable onPress={onDelete} accessibilityRole="button" accessibilityLabel="Delete chat" hitSlop={4} className="h-11 w-11 items-center justify-center">
+      <Pressable onPress={onDelete} accessibilityRole="button" accessibilityLabel={t('chats.delete')} hitSlop={4} className="h-11 w-11 items-center justify-center">
         <Ionicons name="trash-outline" size={20} color={colors['text-muted']} />
       </Pressable>
     </View>

@@ -2,6 +2,7 @@ import { toMonthlyEquivalent } from '@/finance/calculations';
 import { calendarDaysUntil } from '@/utils/months';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { RecurrenceFrequency, RecurringExpense, Subscription } from '@/types/finance';
+import { getLocale, t, tn } from '@/i18n';
 
 export type BillSource = 'subscription' | 'recurring';
 
@@ -22,11 +23,20 @@ export interface BillItem {
   inDays: number | null;
 }
 
+/** Display names, read at access time so they follow the app language. */
 export const FREQUENCY_LABELS: Record<RecurrenceFrequency, string> = {
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  yearly: 'Yearly',
-  one_time: 'One time',
+  get weekly() {
+    return t('freq.weekly');
+  },
+  get monthly() {
+    return t('freq.monthly');
+  },
+  get yearly() {
+    return t('freq.yearly');
+  },
+  get one_time() {
+    return t('freq.one_time');
+  },
 };
 
 /**
@@ -62,11 +72,11 @@ export function nextOccurrence(stored: Date, frequency: RecurrenceFrequency, asO
 
 /** "today", "tomorrow", "in 5 days", or a date for anything further out. */
 export function formatDue(item: Pick<BillItem, 'nextDue' | 'inDays'>): string {
-  if (!item.nextDue || item.inDays === null) return 'No due date set';
-  if (item.inDays === 0) return 'Due today';
-  if (item.inDays === 1) return 'Due tomorrow';
-  if (item.inDays <= 7) return `Due in ${item.inDays} days`;
-  return `Due ${item.nextDue.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+  if (!item.nextDue || item.inDays === null) return t('due.none');
+  if (item.inDays === 0) return t('due.today');
+  if (item.inDays === 1) return t('due.tomorrow');
+  if (item.inDays <= 7) return tn('due.inDays', item.inDays);
+  return t('due.on', { date: item.nextDue.toLocaleDateString(getLocale(), { day: 'numeric', month: 'short' }) });
 }
 
 function build(

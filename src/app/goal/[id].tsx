@@ -10,11 +10,13 @@ import { useThemeColors } from '@/constants/theme';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import type { GoalContribution } from '@/types/finance';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { getLocale, useT } from '@/i18n';
 
 /** A goal's progress, its contribution history, and the "Add money" action. */
 export default function GoalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeColors();
+  const { t, tn } = useT();
   const goal = useFinanceStore((s) => s.goals.find((g) => g.id === id));
   const addGoalContribution = useFinanceStore((s) => s.addGoalContribution);
   const [contributions, setContributions] = useState<GoalContribution[]>([]);
@@ -37,24 +39,24 @@ export default function GoalDetailScreen() {
   if (!goal) {
     return (
       <View className="flex-1 bg-background">
-        <EmptyState icon="flag-outline" title="Goal not found" description="It may have been removed on another device." />
+        <EmptyState icon="flag-outline" title={t('goal.notFound')} description={t('goal.notFoundHint')} />
       </View>
     );
   }
 
   const progress = calculateGoalProgress(goal);
   const statusLine = progress.isComplete
-    ? 'Completed'
+    ? t('goals.completed')
     : progress.isOverdue
-      ? 'Past deadline'
+      ? t('goals.pastDeadline')
       : progress.daysRemaining !== null
-        ? `${progress.daysRemaining} days left`
-        : 'No deadline set';
+        ? tn('goals.daysLeft', progress.daysRemaining)
+        : t('goals.noDeadline');
 
   const handleAdd = async () => {
     const amountMinor = parseMoneyInput(amountInput, goal.currency);
     if (amountMinor === null || amountMinor <= 0) {
-      setError('Enter an amount greater than 0.');
+      setError(t('goal.amountError'));
       Haptics.selectionAsync();
       return;
     }
@@ -75,8 +77,8 @@ export default function GoalDetailScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable onPress={() => router.push({ pathname: '/goal/new', params: { id: goal.id } })} accessibilityRole="button" accessibilityLabel="Edit goal" hitSlop={8} className="min-h-[44px] justify-center">
-              <Body className="font-sans-semibold text-accent-secondary">Edit</Body>
+            <Pressable onPress={() => router.push({ pathname: '/goal/new', params: { id: goal.id } })} accessibilityRole="button" accessibilityLabel={t('goalForm.editTitle')} hitSlop={8} className="min-h-[44px] justify-center">
+              <Body className="font-sans-semibold text-accent-secondary">{t('common.edit')}</Body>
             </Pressable>
           ),
         }}
@@ -96,35 +98,35 @@ export default function GoalDetailScreen() {
         <AmountText valueMinor={goal.currentAmountMinor} currency={goal.currency} size="lg" tone={progress.isComplete ? 'success' : 'primary'} />
         <ProgressBar percent={progress.percent} tone={progress.isComplete ? 'success' : progress.isOverdue ? 'danger' : 'accent'} />
         <View className="flex-row justify-between">
-          <Caption>{progress.percent.toFixed(0)}% of {formatMoney(goal.targetAmountMinor, goal.currency)}</Caption>
-          <Caption>{progress.isComplete ? 'Target reached' : `${formatMoney(progress.remainingMinor, goal.currency)} to go`}</Caption>
+          <Caption>{t('goal.percentOf', { percent: progress.percent.toFixed(0), amount: formatMoney(goal.targetAmountMinor, goal.currency) })}</Caption>
+          <Caption>{progress.isComplete ? t('goal.reached') : t('goal.toGo', { amount: formatMoney(progress.remainingMinor, goal.currency) })}</Caption>
         </View>
       </Card>
 
       <View className="gap-sm">
-        <Label>Add money ({goal.currency})</Label>
+        <Label>{t('goal.addMoney', { currency: goal.currency })}</Label>
         <TextInput
           value={amountInput}
           onChangeText={setAmountInput}
           keyboardType="decimal-pad"
           placeholder="0"
           placeholderTextColor={colors['text-muted']}
-          accessibilityLabel={`Amount to add, in ${goal.currency}`}
+          accessibilityLabel={t('goal.addA11y', { currency: goal.currency })}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-[22px] text-text-primary"
         />
         {error ? <Caption className="text-danger">{error}</Caption> : null}
-        <Button label={isSaving ? 'Adding…' : 'Add money'} onPress={handleAdd} disabled={isSaving} />
+        <Button label={isSaving ? t('goal.adding') : t('goal.add')} onPress={handleAdd} disabled={isSaving} />
       </View>
 
       <View className="gap-sm">
-        <Label>History</Label>
+        <Label>{t('goal.history')}</Label>
         <Card>
           {contributions.length === 0 ? (
-            <Caption>No money added yet. The starting amount you set when creating the goal is included in the total.</Caption>
+            <Caption>{t('goal.noHistory')}</Caption>
           ) : (
             contributions.map((c, index) => (
               <View key={c.id} className={index > 0 ? 'flex-row items-center justify-between border-t border-border py-sm' : 'flex-row items-center justify-between py-sm'}>
-                <Caption>{new Date(c.contributedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</Caption>
+                <Caption>{new Date(c.contributedAt).toLocaleDateString(getLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}</Caption>
                 <AmountText valueMinor={c.amountMinor} currency={goal.currency} size="sm" tone="success" forceSign />
               </View>
             ))

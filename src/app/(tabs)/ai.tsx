@@ -11,6 +11,7 @@ import { useThemeColors } from '@/constants/theme';
 import { ChatBubble } from '@/components/ai/ChatBubble';
 import { SuggestedPrompts } from '@/components/ai/SuggestedPrompts';
 import { useAIStore, type ChatMessage } from '@/store/aiStore';
+import { useT } from '@/i18n';
 
 /** How far above the newest message the user must scroll before "Latest" appears. */
 const SHOW_LATEST_AFTER = 250;
@@ -21,6 +22,7 @@ let promptsHiddenThisSession = false;
 export default function AIScreen() {
   const appBarHeight = useAppBarHeight();
   const colors = useThemeColors();
+  const { t } = useT();
   const { messages, isSending, step, load, sendMessage, retry, newChat } = useAIStore();
   const [draft, setDraft] = useState('');
   const [distanceFromEnd, setDistanceFromEnd] = useState(0);
@@ -65,12 +67,12 @@ export default function AIScreen() {
   return (
     <KeyboardAvoider className="flex-1 bg-background" keyboardVerticalOffset={appBarHeight}>
       <ScreenHeader
-        title="F-AI Copilot"
-        subtitle="Ask about your money — I only use your real data."
+        title={t('ai.title')}
+        subtitle={t('ai.subtitle')}
         right={
           <View className="flex-row gap-xs">
-            <HeaderButton icon="chatbubbles-outline" label="Your chats" onPress={() => router.push('/ai/conversations')} />
-            <HeaderButton icon="create-outline" label="New chat" onPress={startNewChat} disabled={isSending} />
+            <HeaderButton icon="chatbubbles-outline" label={t('ai.yourChats')} onPress={() => router.push('/ai/conversations')} />
+            <HeaderButton icon="create-outline" label={t('ai.newChat')} onPress={startNewChat} disabled={isSending} />
           </View>
         }
       />
@@ -93,22 +95,22 @@ export default function AIScreen() {
           ListHeaderComponent={
             <Caption className="pb-md">
               {aiStatus.provider === 'mock'
-                ? 'Offline copilot: answers come from built-in rules on this phone.'
-                : `Answers by ${providerLabel()}. Your question and the figures it needs are sent to ${providerLabel()}.`}
+                ? t('ai.offlineNote')
+                : t('ai.providerNote', { provider: providerLabel() })}
             </Caption>
           }
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center gap-sm py-xl">
               <Ionicons name="sparkles-outline" size={28} color={colors['accent-secondary']} />
-              <Body className="text-center">Ask anything about your balance, spending, bills, debts or goals.</Body>
-              <Caption className="text-center">Tap a question below to start.</Caption>
+              <Body className="text-center">{t('ai.emptyTitle')}</Body>
+              <Caption className="text-center">{t('ai.emptyHint')}</Caption>
             </View>
           }
           ListFooterComponent={
             isSending ? (
               <View className="flex-row items-center gap-sm py-sm" accessibilityLiveRegion="polite">
                 <ActivityIndicator size="small" color={colors['accent-secondary']} />
-                <Caption>{step ?? 'Thinking…'}</Caption>
+                <Caption>{step ?? t('ai.thinking')}</Caption>
               </View>
             ) : null
           }
@@ -118,7 +120,7 @@ export default function AIScreen() {
           <Pressable
             onPress={() => listRef.current?.scrollToEnd({ animated: true })}
             accessibilityRole="button"
-            accessibilityLabel="Scroll to the latest message"
+            accessibilityLabel={t('ai.latest')}
             className="absolute bottom-md right-lg h-10 w-10 items-center justify-center rounded-full border border-border-strong bg-surface"
             style={{ elevation: 3, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}
           >
@@ -129,11 +131,11 @@ export default function AIScreen() {
 
       <View className="border-t border-border bg-surface pt-sm">
         <View className="flex-row items-center">
-          <View className="flex-1">{promptsHidden ? <Caption className="px-lg">Suggested questions hidden</Caption> : <SuggestedPrompts onSelect={send} disabled={isSending} />}</View>
+          <View className="flex-1">{promptsHidden ? <Caption className="px-lg">{t('ai.promptsHidden')}</Caption> : <SuggestedPrompts onSelect={send} disabled={isSending} />}</View>
           <Pressable
             onPress={togglePrompts}
             accessibilityRole="button"
-            accessibilityLabel={promptsHidden ? 'Show suggested questions' : 'Hide suggested questions'}
+            accessibilityLabel={promptsHidden ? t('ai.showPrompts') : t('ai.hidePrompts')}
             hitSlop={8}
             className="h-8 w-10 items-center justify-center"
           >
@@ -145,18 +147,18 @@ export default function AIScreen() {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Ask about your finances…"
+            placeholder={t('ai.placeholder')}
             placeholderTextColor={colors['text-muted']}
             multiline
             textAlignVertical="center"
-            accessibilityLabel="Your question"
+            accessibilityLabel={t('ai.inputA11y')}
             className="max-h-[112px] min-h-[44px] flex-1 rounded-md border border-border-strong bg-background px-md py-sm text-text-primary"
           />
           <Pressable
             onPress={() => send(draft)}
             disabled={isSending || !draft.trim()}
             accessibilityRole="button"
-            accessibilityLabel="Send"
+            accessibilityLabel={t('ai.send')}
             className="h-11 w-11 items-center justify-center rounded-full bg-accent"
             style={{ opacity: isSending || !draft.trim() ? 0.5 : 1 }}
           >

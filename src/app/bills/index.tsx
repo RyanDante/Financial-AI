@@ -6,10 +6,12 @@ import { useBills } from '@/features/bills/useBills';
 import { FREQUENCY_LABELS, formatDue, toBillItems } from '@/features/bills/bills';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeColors } from '@/constants/theme';
+import { useT } from '@/i18n';
 
 /** Subscriptions and recurring bills: what they cost per month and what's due next. */
 export default function BillsScreen() {
   const colors = useThemeColors();
+  const { t, tn } = useT();
   const { subscriptions, recurringExpenses } = useBills();
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const items = toBillItems(subscriptions, recurringExpenses);
@@ -20,7 +22,7 @@ export default function BillsScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable onPress={() => router.push('/bills/new')} accessibilityRole="button" accessibilityLabel="Add a bill" hitSlop={8} className="h-11 w-11 items-end justify-center">
+            <Pressable onPress={() => router.push('/bills/new')} accessibilityRole="button" accessibilityLabel={t('nav.addBill')} hitSlop={8} className="h-11 w-11 items-end justify-center">
               <Ionicons name="add" size={26} color={colors['text-primary']} />
             </Pressable>
           ),
@@ -31,23 +33,23 @@ export default function BillsScreen() {
         <Card className="gap-md">
           <EmptyState
             icon="calendar-outline"
-            title="No bills or subscriptions yet"
-            description="Add rent, electricity, TV or phone plans so F-AI can set money aside for them."
+            title={t('bills.none')}
+            description={t('bills.noneHint')}
           />
-          <Button label="Add a bill" onPress={() => router.push('/bills/new')} />
+          <Button label={t('nav.addBill')} onPress={() => router.push('/bills/new')} />
         </Card>
       ) : (
         <>
           <Card className="gap-xs">
-            <Overline>Per month</Overline>
+            <Overline>{t('bills.perMonth')}</Overline>
             <AmountText valueMinor={monthlyTotalMinor} currency={currency} size="lg" />
             <Caption>
-              Across {items.length} {items.length === 1 ? 'bill' : 'bills'}. Yearly and weekly bills are shown as their monthly share.
+              {tn('bills.across', items.length)}
             </Caption>
           </Card>
 
           <View className="gap-sm">
-            <Label>Coming up</Label>
+            <Label>{t('bills.comingUp')}</Label>
             <Card>
               {items.map((item, index) => (
                 <Pressable
@@ -55,7 +57,7 @@ export default function BillsScreen() {
                   onPress={() => router.push({ pathname: '/bills/new', params: { source: item.source, id: item.sourceId } })}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.name}, ${FREQUENCY_LABELS[item.frequency]}, ${formatDue(item)}`}
-                  accessibilityHint="Edit or stop tracking this bill"
+                  accessibilityHint={t('bills.rowHint')}
                   className={index > 0 ? 'flex-row items-center gap-md border-t border-border py-md' : 'flex-row items-center gap-md py-md'}
                 >
                   <IconCircle
@@ -74,7 +76,7 @@ export default function BillsScreen() {
                 </Pressable>
               ))}
             </Card>
-            <Caption>Tap a bill to change it or stop tracking it.</Caption>
+            <Caption>{t('bills.tapHint')}</Caption>
           </View>
         </>
       )}

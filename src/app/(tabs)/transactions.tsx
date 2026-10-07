@@ -13,18 +13,20 @@ import { useMonthTransactions } from '@/features/transactions/useMonthTransactio
 import { calculateMonthlySpending } from '@/finance/calculations';
 import { currentMonthKey } from '@/utils/months';
 import { useThemeColors } from '@/constants/theme';
+import { useT, type MessageKey } from '@/i18n';
 
-const FILTERS: { id: TransactionTypeFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'expense', label: 'Expenses' },
-  { id: 'income', label: 'Income' },
-  { id: 'transfer', label: 'Transfers' },
+const FILTERS: { id: TransactionTypeFilter; label: MessageKey }[] = [
+  { id: 'all', label: 'txs.filterAll' },
+  { id: 'expense', label: 'txs.filterExpense' },
+  { id: 'income', label: 'txs.filterIncome' },
+  { id: 'transfer', label: 'txs.filterTransfer' },
 ];
 
 export default function TransactionsScreen() {
   // `month` lets other screens (e.g. Overview's spending trend) open a specific month.
   const params = useLocalSearchParams<{ month?: string }>();
   const colors = useThemeColors();
+  const { t } = useT();
   const categories = useFinanceStore((s) => s.categories);
   const currency = useSettingsStore((s) => s.defaultCurrency);
   const { activeTransactionFilter, setTransactionFilter } = useUIStore();
@@ -51,13 +53,13 @@ export default function TransactionsScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader
-        title="Transactions"
+        title={t('nav.transactions')}
         right={
           <View className="flex-row items-center gap-sm">
             <Pressable
               onPress={() => router.push('/import/sms')}
               accessibilityRole="button"
-              accessibilityLabel="Import from mobile money SMS"
+              accessibilityLabel={t('txs.importA11y')}
               className="h-11 w-11 items-center justify-center rounded-full border border-border-strong bg-surface"
             >
               <Ionicons name="chatbox-ellipses-outline" size={20} color={colors['text-primary']} />
@@ -65,7 +67,7 @@ export default function TransactionsScreen() {
             <Pressable
               onPress={() => router.push('/transaction/new')}
               accessibilityRole="button"
-              accessibilityLabel="Add transaction"
+              accessibilityLabel={t('nav.addTransaction')}
               className="h-11 w-11 items-center justify-center rounded-full bg-accent"
             >
               <Ionicons name="add" size={22} color={colors['on-accent']} />
@@ -78,10 +80,10 @@ export default function TransactionsScreen() {
         <MonthStepper month={month} onChange={setMonth} />
         <View className="flex-row justify-center gap-lg">
           <Caption>
-            Spent <AmountText valueMinor={spentMinor} currency={currency} size="xs" tone="primary" />
+            {t('txs.spent')} <AmountText valueMinor={spentMinor} currency={currency} size="xs" tone="primary" />
           </Caption>
           <Caption>
-            Income <AmountText valueMinor={incomeMinor} currency={currency} size="xs" tone="success" />
+            {t('txs.income')} <AmountText valueMinor={incomeMinor} currency={currency} size="xs" tone="success" />
           </Caption>
         </View>
         <View className="flex-row items-center gap-sm rounded-md border border-border-strong bg-surface px-md">
@@ -89,20 +91,20 @@ export default function TransactionsScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search merchant or category"
+            placeholder={t('txs.search')}
             placeholderTextColor={colors['text-muted']}
             returnKeyType="search"
             autoCorrect={false}
-            accessibilityLabel="Search transactions"
+            accessibilityLabel={t('txs.searchA11y')}
             className="flex-1 py-sm text-text-primary"
           />
           {query ? (
-            <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={8}>
+            <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel={t('txs.clearSearch')} hitSlop={8}>
               <Ionicons name="close-circle" size={16} color={colors['text-muted']} />
             </Pressable>
           ) : null}
         </View>
-        <ChipGroup options={FILTERS} selectedId={activeTransactionFilter} onSelect={setTransactionFilter} />
+        <ChipGroup options={FILTERS.map((f) => ({ id: f.id, label: t(f.label) }))} selectedId={activeTransactionFilter} onSelect={setTransactionFilter} />
       </View>
 
       <FlatList
@@ -117,9 +119,9 @@ export default function TransactionsScreen() {
         )}
         ListEmptyComponent={
           isLoading ? null : isFiltered ? (
-            <EmptyState icon="search-outline" title="No matching transactions" description="Try another word or filter, or a different month." />
+            <EmptyState icon="search-outline" title={t('txs.noMatches')} description={t('txs.noMatchesHint')} />
           ) : (
-            <EmptyState icon="receipt-outline" title="No transactions this month" description="Tap + to add one, or step back to an earlier month." />
+            <EmptyState icon="receipt-outline" title={t('txs.noneThisMonth')} description={t('txs.noneThisMonthHint')} />
           )
         }
       />

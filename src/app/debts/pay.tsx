@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/store/financeStore';
 import { useThemeColors } from '@/constants/theme';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { useT } from '@/i18n';
 
 /**
  * Record a repayment on a debt (either direction), optionally also logging
@@ -19,6 +20,7 @@ import { FormScrollView } from '@/components/keyboard/keyboard';
 export default function PayDebtScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeColors();
+  const { t } = useT();
   const debt = useDebts().find((d) => d.id === id);
   const { accounts, loadAll } = useFinanceStore();
   const [amountInput, setAmountInput] = useState('');
@@ -30,7 +32,7 @@ export default function PayDebtScreen() {
   if (!debt) {
     return (
       <View className="flex-1 bg-background">
-        <EmptyState icon="people-outline" title="Debt not found" description="It may have been removed on another device." />
+        <EmptyState icon="people-outline" title={t('pay.notFound')} description={t('pay.notFoundHint')} />
       </View>
     );
   }
@@ -43,12 +45,12 @@ export default function PayDebtScreen() {
   const handleSave = async () => {
     const amountMinor = amountInput.trim() ? parseMoneyInput(amountInput, debt.currency) : suggestedMinor;
     if (amountMinor === null || amountMinor <= 0) {
-      setError('Enter an amount greater than 0.');
+      setError(t('pay.amountError'));
       Haptics.selectionAsync();
       return;
     }
     if (amountMinor > debt.remainingMinor) {
-      setError(`Only ${formatMoney(debt.remainingMinor, debt.currency)} is left on this debt.`);
+      setError(t('pay.onlyLeft', { amount: formatMoney(debt.remainingMinor, debt.currency) }));
       Haptics.selectionAsync();
       return;
     }
@@ -63,7 +65,7 @@ export default function PayDebtScreen() {
         currency: debt.currency,
         type: isOwed ? 'income' : 'expense',
         merchant: who,
-        description: isOwed ? `Repayment from ${who}` : `Repayment to ${who}`,
+        description: isOwed ? t('pay.repaymentFrom', { who }) : t('pay.repaymentTo', { who }),
         notes: null,
         occurredAt: new Date().toISOString(),
         source: 'manual',
@@ -76,10 +78,10 @@ export default function PayDebtScreen() {
 
   const handleDelete = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(`Remove "${debt.name}"?`, 'It stops counting in your debt totals and alerts. Payments already logged as transactions stay.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('pay.removeTitle', { name: debt.name }), t('pay.removeBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('pay.remove'),
         style: 'destructive',
         onPress: async () => {
           await debtsRepository.deleteDebt(debt.id);
@@ -92,30 +94,30 @@ export default function PayDebtScreen() {
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
-      <Stack.Screen options={{ title: isOwed ? 'Record repayment received' : 'Record a payment' }} />
+      <Stack.Screen options={{ title: isOwed ? t('pay.titleReceived') : t('nav.recordPayment') }} />
 
       <Card className="gap-xs">
-        <Overline>{isOwed ? `${who} still owes you` : `You still owe ${who}`}</Overline>
+        <Overline>{isOwed ? t('pay.stillOwesYou', { who }) : t('pay.youStillOwe', { who })}</Overline>
         <AmountText valueMinor={debt.remainingMinor} currency={debt.currency} size="lg" />
         <Caption>
-          {debt.name} · {formatMoney(debt.principalMinor, debt.currency)} originally
+          {t('pay.originally', { name: debt.name, amount: formatMoney(debt.principalMinor, debt.currency) })}
         </Caption>
       </Card>
 
       {debt.remainingMinor > 0 ? (
         <>
           <View className="gap-sm">
-            <Label>Amount ({debt.currency})</Label>
+            <Label>{t('pay.amount', { currency: debt.currency })}</Label>
             <TextInput
               value={amountInput}
               onChangeText={setAmountInput}
               keyboardType="decimal-pad"
               placeholder={formatMoney(suggestedMinor, debt.currency, { showSymbol: false })}
               placeholderTextColor={colors['text-muted']}
-              accessibilityLabel={`Payment amount in ${debt.currency}`}
+              accessibilityLabel={t('pay.amountA11y', { currency: debt.currency })}
               className="rounded-md border border-border-strong bg-surface px-md py-md text-[22px] text-text-primary"
             />
-            <Caption>Leave empty to record {formatMoney(suggestedMinor, debt.currency)}.</Caption>
+            <Caption>{t('pay.leaveEmpty', { amount: formatMoney(suggestedMinor, debt.currency) })}</Caption>
           </View>
 
           <Pressable
@@ -125,21 +127,21 @@ export default function PayDebtScreen() {
             className="min-h-[44px] flex-row items-center gap-sm"
           >
             <Ionicons name={logTransaction ? 'checkbox' : 'square-outline'} size={20} color={logTransaction ? colors.accent : colors['text-muted']} />
-            <BodySmall>Also record it as {isOwed ? 'money in' : 'money out'} on an account</BodySmall>
+            <BodySmall>{isOwed ? t('pay.alsoRecordIn') : t('pay.alsoRecordOut')}</BodySmall>
           </Pressable>
           {logTransaction && accounts.length > 1 ? (
             <ChipGroup options={accounts.map((a) => ({ id: a.id, label: a.name }))} selectedId={selectedAccountId} onSelect={setAccountId} />
           ) : null}
 
           {error ? <Caption className="text-danger">{error}</Caption> : null}
-          <Button label={isSaving ? 'Saving…' : 'Save payment'} onPress={handleSave} disabled={isSaving} />
+          <Button label={isSaving ? t('common.saving') : t('pay.save')} onPress={handleSave} disabled={isSaving} />
         </>
       ) : (
-        <Body className="text-success">This debt is settled.</Body>
+        <Body className="text-success">{t('pay.settled')}</Body>
       )}
 
       <Pressable onPress={handleDelete} accessibilityRole="button" className="items-center py-md">
-        <Body className="text-danger">Remove this debt</Body>
+        <Body className="text-danger">{t('pay.removeDebt')}</Body>
       </Pressable>
     </FormScrollView>
   );

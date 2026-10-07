@@ -6,6 +6,7 @@ import { formatDue, toBillItems } from '@/features/bills/bills';
 import type { CurrencyCode } from '@/constants/currencies';
 import type { BudgetCategory, Category, RecurringExpense, Subscription, Transaction } from '@/types/finance';
 import { ESSENTIALS, type Essential } from './essentials';
+import { categoryLabel, t, tn, type MessageKey } from '@/i18n';
 
 export type RecommendationKind = 'repeat' | 'bill' | 'essential';
 
@@ -85,16 +86,16 @@ function repeatPurchases(input: RecommendationInput, asOf: Date): Recommendation
 
     const typicalMinor = Math.round(median(txs.map((tx) => tx.amountMinor)));
     const category = last.categoryId ? categoryById.get(last.categoryId) : undefined;
-    const name = last.merchant?.trim() || category?.name || 'Regular purchase';
+    const name = last.merchant?.trim() || (category ? categoryLabel(category.name) : t('rec.regularPurchase'));
     due.push({
       overdueRatio: daysSince / interval,
       card: {
         id: `repeat-${key}`,
         kind: 'repeat',
         icon: 'repeat-outline',
-        reason: 'You buy this regularly',
+        reason: t('rec.repeatReason'),
         title: name,
-        detail: `Usually every ${plural(interval, 'day')} · last ${plural(daysSince, 'day')} ago · typically ${formatMoney(typicalMinor, last.currency)}`,
+        detail: t('rec.repeatDetail', { every: tn('common.days', interval), since: tn('common.days', daysSince), amount: formatMoney(typicalMinor, last.currency) }),
         prefill: { categoryId: last.categoryId, merchant: last.merchant?.trim() || null },
       },
     });
@@ -110,9 +111,9 @@ function billsDueSoon(input: RecommendationInput, asOf: Date): Recommendation[] 
       id: `bill-${bill.id}`,
       kind: 'bill' as const,
       icon: 'calendar-outline' as const,
-      reason: 'Bill coming up',
+      reason: t('rec.billReason'),
       title: bill.name,
-      detail: `${formatMoney(bill.amountMinor, bill.currency)} ${formatDue(bill).toLowerCase()}`,
+      detail: t('rec.billDetail', { amount: formatMoney(bill.amountMinor, bill.currency), due: formatDue(bill).toLowerCase() }),
       prefill: { categoryId: bill.categoryId, merchant: bill.name },
     }));
 }
@@ -128,8 +129,8 @@ function essentials(input: RecommendationInput, asOf: Date): Recommendation[] {
       id: `essential-${item.id}`,
       kind: 'essential' as const,
       icon: item.icon,
-      reason: 'Everyday essential',
-      title: item.name,
+      reason: t('rec.essentialReason'),
+      title: t(`essential.${item.id}` as MessageKey),
       detail: budgetLine(input, category, item.categoryName),
       prefill: { categoryId: category?.id ?? null, merchant: item.name },
     };
@@ -138,15 +139,15 @@ function essentials(input: RecommendationInput, asOf: Date): Recommendation[] {
 
 function budgetLine(input: RecommendationInput, category: Category | undefined, categoryName: string): string {
   const limit = category ? input.budgetCategories.find((bc) => bc.categoryId === category.id) : undefined;
-  if (!category || !limit) return `No ${categoryName} budget set this month`;
+  if (!category || !limit) return t('rec.noBudget', { category: categoryLabel(categoryName) });
   const spentMinor = calculateMonthlySpending(
     input.transactions.filter((tx) => tx.categoryId === category.id),
     input.month,
   );
   const { remainingMinor, isOverBudget } = calculateBudgetRemaining(limit.limitMinor, spentMinor);
   return isOverBudget
-    ? `${category.name} budget is ${formatMoney(Math.abs(remainingMinor), input.currency)} over this month`
-    : `${formatMoney(remainingMinor, input.currency)} left in your ${category.name} budget this month`;
+    ? t('rec.overBudget', { category: categoryLabel(category.name), amount: formatMoney(Math.abs(remainingMinor), input.currency) })
+    : t('rec.leftInBudget', { category: categoryLabel(category.name), amount: formatMoney(remainingMinor, input.currency) });
 }
 
 function median(values: number[]): number {
@@ -159,6 +160,3 @@ function dayOfYear(date: Date): number {
   return Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / MS_PER_DAY);
 }
 
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? '' : 's'}`;
-}

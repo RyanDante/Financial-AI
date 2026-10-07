@@ -11,6 +11,7 @@ import { useThemeColors } from '@/constants/theme';
 import { FREQUENCY_LABELS, nextOccurrence } from '@/features/bills/bills';
 import { formatMoney, parseMoneyInput } from '@/utils/currency';
 import { FormScrollView } from '@/components/keyboard/keyboard';
+import { categoryLabel, useT } from '@/i18n';
 
 type BillKind = 'bill' | 'subscription';
 type BillFrequency = 'weekly' | 'monthly' | 'yearly';
@@ -30,6 +31,7 @@ export default function NewBillScreen() {
   const params = useLocalSearchParams<{ source?: 'subscription' | 'recurring'; id?: string }>();
   const isEditing = Boolean(params.id && params.source);
   const colors = useThemeColors();
+  const { t } = useT();
   const categories = useFinanceStore((s) => s.categories);
   const loadAll = useFinanceStore((s) => s.loadAll);
   const currency = useSettingsStore((s) => s.defaultCurrency);
@@ -80,10 +82,10 @@ export default function NewBillScreen() {
   const stopTracking = () => {
     if (!params.id) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(`Stop tracking ${name || 'this bill'}?`, 'It will no longer count toward your upcoming bills or safe-to-spend amount.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('bills.stopTitle', { name: name || t('bills.thisBill') }), t('bills.stopBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Stop tracking',
+        text: t('bills.stop'),
         style: 'destructive',
         onPress: async () => {
           if (params.source === 'subscription') await subscriptionsRepository.setSubscriptionActive(params.id as string, false);
@@ -98,12 +100,12 @@ export default function NewBillScreen() {
   const handleSave = async () => {
     const amountMinor = parseMoneyInput(amountInput, currency);
     if (!name.trim()) {
-      setError('Give it a name, e.g. "Rent" or "Canal+".');
+      setError(t('bills.nameError'));
       Haptics.selectionAsync();
       return;
     }
     if (amountMinor === null || amountMinor <= 0) {
-      setError('Enter an amount greater than 0.');
+      setError(t('bills.amountError'));
       Haptics.selectionAsync();
       return;
     }
@@ -128,14 +130,14 @@ export default function NewBillScreen() {
 
   return (
     <FormScrollView className="flex-1 bg-background" contentContainerClassName="gap-lg p-lg pb-3xl">
-      <Stack.Screen options={{ title: isEditing ? (kind === 'subscription' ? 'Edit subscription' : 'Edit bill') : 'Add a bill' }} />
-      {isLoaded ? null : <Caption>Loading…</Caption>}
+      <Stack.Screen options={{ title: isEditing ? (kind === 'subscription' ? t('bills.editSubscription') : t('bills.editBill')) : t('nav.addBill') }} />
+      {isLoaded ? null : <Caption>{t('common.loading')}</Caption>}
       <View className={isEditing ? 'hidden' : 'gap-sm'}>
-        <Label>Type</Label>
+        <Label>{t('bills.type')}</Label>
         <ChipGroup<BillKind>
           options={[
-            { id: 'bill', label: 'Bill' },
-            { id: 'subscription', label: 'Subscription' },
+            { id: 'bill', label: t('bills.kindBill') },
+            { id: 'subscription', label: t('bills.kindSubscription') },
           ]}
           selectedId={kind}
           onSelect={(next) => {
@@ -146,18 +148,18 @@ export default function NewBillScreen() {
       </View>
 
       <View className="gap-sm">
-        <Label>Name</Label>
+        <Label>{t('bills.name')}</Label>
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder={kind === 'bill' ? 'e.g. Rent, ENEO electricity' : 'e.g. Canal+, MTN data plan'}
+          placeholder={kind === 'bill' ? t('bills.billPlaceholder') : t('bills.subscriptionPlaceholder')}
           placeholderTextColor={colors['text-muted']}
           className="rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
       </View>
 
       <View className="gap-sm">
-        <Label>Amount ({currency})</Label>
+        <Label>{t('bills.amount', { currency })}</Label>
         <TextInput
           value={amountInput}
           onChangeText={setAmountInput}
@@ -169,24 +171,24 @@ export default function NewBillScreen() {
       </View>
 
       <View className="gap-sm">
-        <Label>How often</Label>
+        <Label>{t('bills.howOften')}</Label>
         <ChipGroup<BillFrequency> options={FREQUENCIES[kind].map((f) => ({ id: f, label: FREQUENCY_LABELS[f] }))} selectedId={frequency} onSelect={setFrequency} />
       </View>
 
-      <DateField label="Next due" value={nextDue} onChange={setNextDue} minimumDate={new Date()} />
+      <DateField label={t('bills.nextDue')} value={nextDue} onChange={setNextDue} minimumDate={new Date()} />
 
       <View className="gap-sm">
-        <Label>Category (optional)</Label>
-        <ChipGroup options={expenseCategories.map((c) => ({ id: c.id, label: c.name }))} selectedId={categoryId} onSelect={setCategoryId} />
+        <Label>{t('bills.category')}</Label>
+        <ChipGroup options={expenseCategories.map((c) => ({ id: c.id, label: categoryLabel(c.name) }))} selectedId={categoryId} onSelect={setCategoryId} />
       </View>
 
       {error ? <Caption className="text-danger">{error}</Caption> : null}
 
-      <Button label={isSaving ? 'Saving…' : kind === 'bill' ? 'Save bill' : 'Save subscription'} className="mt-sm" onPress={handleSave} disabled={isSaving || !isLoaded} />
+      <Button label={isSaving ? t('common.saving') : kind === 'bill' ? t('bills.saveBill') : t('bills.saveSubscription')} className="mt-sm" onPress={handleSave} disabled={isSaving || !isLoaded} />
 
       {isEditing ? (
         <Pressable onPress={stopTracking} accessibilityRole="button" className="items-center py-md">
-          <Body className="text-danger">Stop tracking</Body>
+          <Body className="text-danger">{t('bills.stop')}</Body>
         </Pressable>
       ) : null}
     </FormScrollView>
