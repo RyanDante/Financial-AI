@@ -47,3 +47,22 @@ function describeStatus(vendor: string, status: number, detail: string): string 
   if (__DEV__ && detail) console.warn(`[ai] ${vendor} ${status}: ${detail.slice(0, 500)}`);
   return `${vendor} API error ${status}.`;
 }
+
+export type ProviderId = 'anthropic' | 'openai' | 'gemini';
+
+/** One request to a model vendor, before it's sent. */
+export interface VendorCall {
+  provider: ProviderId;
+  /** Display name for errors ("Claude"). */
+  vendor: string;
+  url: string;
+  headers: Record<string, string>;
+  body: Record<string, unknown>;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+/** How a client reaches its vendor: straight there with the key, or through the F-AI proxy. */
+export type Transport = (call: VendorCall) => Promise<unknown>;
+
+export const directTransport: Transport = (call) => postJSON(call.url, call.headers, call.body, call.vendor, call.signal, call.timeoutMs);

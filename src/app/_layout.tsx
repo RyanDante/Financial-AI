@@ -113,6 +113,7 @@ export default function RootLayout() {
               <Stack.Screen name="debts/pay" options={modalOptions('Record a payment')} />
               <Stack.Screen name="income/new" options={modalOptions('Add income')} />
               <Stack.Screen name="ai/conversations" options={modalOptions('Your chats')} />
+              <Stack.Screen name="share" options={{ title: 'Shared to F-AI' }} />
             </Stack>
             {isLocked ? <LockScreen /> : null}
           </View>

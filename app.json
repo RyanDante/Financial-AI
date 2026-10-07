@@ -59,6 +59,28 @@
           "photosPermission": "Allow F-AI to access your photos to attach a receipt to a transaction.",
           "cameraPermission": "Allow F-AI to use the camera to photograph a receipt."
         }
+      ],
+      [
+        "expo-sharing",
+        {
+          "ios": {
+            "enabled": false,
+            "activationRule": {
+              "supportsText": true,
+              "supportsImageWithMaxCount": 1
+            }
+          },
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": [
+              "text/plain",
+              "image/*"
+            ],
+            "multipleShareMimeTypes": [
+              "image/*"
+            ]
+          }
+        }
       ]
     ],
     "experiments": {

@@ -2,7 +2,7 @@ import { DEFAULT_ANTHROPIC_MODEL, readAIConfig } from './config';
 
 describe('readAIConfig', () => {
   it('uses the offline copilot when nothing is configured', () => {
-    expect(readAIConfig({})).toEqual({ provider: 'mock', apiKey: null, model: null, baseUrl: null, problem: null });
+    expect(readAIConfig({})).toEqual({ provider: 'mock', apiKey: null, model: null, baseUrl: null, transport: 'direct', problem: null });
   });
 
   it('defaults the Claude model', () => {
@@ -30,5 +30,17 @@ describe('readAIConfig', () => {
     expect(readAIConfig({ EXPO_PUBLIC_AI_PROVIDER: 'openai', EXPO_PUBLIC_AI_API_KEY: 'k', EXPO_PUBLIC_AI_MODEL: 'm', EXPO_PUBLIC_AI_BASE_URL: 'https://api.groq.com/openai/v1/' }).baseUrl).toBe(
       'https://api.groq.com/openai/v1',
     );
+  });
+  it('uses the proxy without a key in the app', () => {
+    expect(readAIConfig({ EXPO_PUBLIC_AI_PROVIDER: 'anthropic', EXPO_PUBLIC_AI_TRANSPORT: 'Proxy', EXPO_PUBLIC_AI_API_KEY: 'ignored' })).toEqual({
+      provider: 'anthropic',
+      apiKey: null,
+      model: DEFAULT_ANTHROPIC_MODEL,
+      baseUrl: null,
+      transport: 'proxy',
+      problem: null,
+    });
+    expect(readAIConfig({ EXPO_PUBLIC_AI_PROVIDER: 'openai', EXPO_PUBLIC_AI_TRANSPORT: 'proxy' }).problem).toMatch(/EXPO_PUBLIC_AI_MODEL/);
+    expect(readAIConfig({ EXPO_PUBLIC_AI_PROVIDER: 'gemini', EXPO_PUBLIC_AI_TRANSPORT: 'cloud', EXPO_PUBLIC_AI_API_KEY: 'k' }).problem).toMatch(/isn't direct or proxy/);
   });
 });

@@ -1,4 +1,4 @@
-import { postJSON } from './http';
+import { directTransport, type Transport } from './http';
 import type { LLMClient, LLMRequest, LLMResponse, LLMTurn } from './types';
 import { LLMError } from './types';
 
@@ -34,6 +34,7 @@ export class OpenAIClient implements LLMClient {
     private apiKey: string,
     readonly model: string,
     baseUrl?: string | null,
+    private transport: Transport = directTransport,
   ) {
     this.baseUrl = baseUrl ?? OPENAI_BASE_URL;
   }
@@ -49,7 +50,15 @@ export class OpenAIClient implements LLMClient {
       ...(isOpenAI ? { max_completion_tokens: request.maxTokens ?? 4096 } : { max_tokens: request.maxTokens ?? 4096 }),
     };
 
-    const data = await postJSON<ChatCompletion>(`${this.baseUrl}/chat/completions`, { Authorization: `Bearer ${this.apiKey}` }, body, 'OpenAI', request.signal, request.timeoutMs);
+    const data = (await this.transport({
+      provider: 'openai',
+      vendor: 'OpenAI',
+      url: `${this.baseUrl}/chat/completions`,
+      headers: { Authorization: `Bearer ${this.apiKey}` },
+      body,
+      signal: request.signal,
+      timeoutMs: request.timeoutMs,
+    })) as ChatCompletion;
     const choice = data.choices?.[0];
     if (!choice) throw new LLMError('OpenAI returned no answer.', true);
 

@@ -1,4 +1,4 @@
-import { postJSON } from './http';
+import { directTransport, type Transport } from './http';
 import type { LLMClient, LLMRequest, LLMResponse, LLMTurn } from './types';
 import { LLMError } from './types';
 
@@ -33,6 +33,7 @@ export class GeminiClient implements LLMClient {
     private apiKey: string,
     readonly model: string,
     baseUrl?: string | null,
+    private transport: Transport = directTransport,
   ) {
     this.baseUrl = baseUrl ?? GEMINI_BASE_URL;
   }
@@ -50,14 +51,15 @@ export class GeminiClient implements LLMClient {
       generationConfig: { maxOutputTokens: request.maxTokens ?? 4096 },
     };
 
-    const data = await postJSON<GenerateContentResponse>(
-      `${this.baseUrl}/models/${encodeURIComponent(this.model)}:generateContent`,
-      { 'x-goog-api-key': this.apiKey },
+    const data = (await this.transport({
+      provider: 'gemini',
+      vendor: 'Gemini',
+      url: `${this.baseUrl}/models/${encodeURIComponent(this.model)}:generateContent`,
+      headers: { 'x-goog-api-key': this.apiKey },
       body,
-      'Gemini',
-      request.signal,
-      request.timeoutMs,
-    );
+      signal: request.signal,
+      timeoutMs: request.timeoutMs,
+    })) as GenerateContentResponse;
 
     if (data.promptFeedback?.blockReason) return { text: '', toolCalls: [], stopReason: 'refusal' };
     const candidate = data.candidates?.[0];

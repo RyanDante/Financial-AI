@@ -1,4 +1,4 @@
-import { postJSON } from './http';
+import { directTransport, type Transport } from './http';
 import type { LLMClient, LLMRequest, LLMResponse, LLMToolCall, LLMTurn } from './types';
 import { LLMError } from './types';
 
@@ -38,6 +38,7 @@ export class AnthropicClient implements LLMClient {
     private apiKey: string,
     readonly model: string,
     baseUrl?: string | null,
+    private transport: Transport = directTransport,
   ) {
     this.baseUrl = baseUrl ?? ANTHROPIC_BASE_URL;
   }
@@ -58,7 +59,15 @@ export class AnthropicClient implements LLMClient {
       ...(supportsExtras ? { output_config: { effort: 'medium' }, fallbacks: 'default' } : {}),
     };
 
-    const data = await postJSON<MessagesResponse>(`${this.baseUrl}/v1/messages`, headers, body, 'Claude', request.signal, request.timeoutMs);
+    const data = (await this.transport({
+      provider: 'anthropic',
+      vendor: 'Claude',
+      url: `${this.baseUrl}/v1/messages`,
+      headers,
+      body,
+      signal: request.signal,
+      timeoutMs: request.timeoutMs,
+    })) as MessagesResponse;
     if (!Array.isArray(data.content)) throw new LLMError('Claude returned no answer.', true);
 
     const toolCalls: LLMToolCall[] = [];

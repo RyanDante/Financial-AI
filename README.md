@@ -17,6 +17,33 @@ Scan the QR code with Expo Go, or press `a`/`i` for an emulator/simulator. The a
 
 To enable cloud backup/sync, copy `.env.example` to `.env`, fill in your Firebase project's config, and see `docs/FIREBASE.md` for the rest (security rules, emulators, deployment).
 
+## Development build (Share to F-AI, reminders, Face ID)
+
+Expo Go can't receive shared SMS, show reminders on Android, or use Face ID. A development build is your own installable F-AI app that still loads code from `npx expo start`:
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest build --profile development --platform android
+```
+
+Install the APK it produces, then run `npx expo start` and open the project from the F-AI app. The first build asks for an Android package name (e.g. `com.yourname.fai`); pick it carefully, it can't change after publishing. Profiles are in `eas.json` (`preview` makes a standalone APK to share).
+
+`.env` isn't uploaded to EAS, so a `preview`/`production` build needs its `EXPO_PUBLIC_*` values as EAS environment variables (`npx eas-cli@latest env:create`), and must use the AI proxy below, never a key.
+
+**Share to F-AI:** in your SMS app, long-press an MTN MoMo or Orange Money message (or share a screenshot of it), tap Share, then F-AI. The import screen opens and reads it. Android only for now; iOS needs `ios.bundleIdentifier` set in `app.json` before turning on the share extension (`expo-sharing` plugin, `ios.enabled`).
+
+## AI proxy (keeps the AI key off phones)
+
+`functions/` is a Firebase Cloud Function, `aiProxy`, that holds the model key and answers only signed-in users, with a daily limit per user. It needs the Firebase Blaze plan.
+
+```bash
+cd functions && npm install && cd ..
+firebase functions:secrets:set AI_API_KEY
+firebase deploy --only functions
+```
+
+The first deploy asks for `AI_PROVIDER`, `AI_MODEL` and `AI_DAILY_LIMIT`. Then in `.env` set `EXPO_PUBLIC_AI_TRANSPORT=proxy`, the same provider and model, and leave `EXPO_PUBLIC_AI_API_KEY` empty.
+
 ## Scripts
 
 ```bash
