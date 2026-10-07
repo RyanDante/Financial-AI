@@ -1,4 +1,4 @@
-import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import { getActiveCurrency } from '@/features/currency/activeCurrency';
 import { makeAgentRoutingRecord } from '@/types/ai';
 import { defaultOrchestrator } from '../agents';
 import type { AIProvider, AIProviderMessage, AIProviderResult } from './types';
@@ -26,7 +26,7 @@ export class MockAIProvider implements AIProvider {
     const lastUserMessage = [...params.messages].reverse().find((m) => m.role === 'user');
     const text = lastUserMessage?.content ?? '';
 
-    const response = await defaultOrchestrator.handle(text, { currency: DEFAULT_CURRENCY }, params.tools);
+    const response = await defaultOrchestrator.handle(text, { currency: await getActiveCurrency() }, params.tools);
 
     // The routing marker rides in the same tool_calls_json column as real
     // tool calls (no schema change) — see makeAgentRoutingRecord for why.

@@ -25,7 +25,8 @@ import {
   calculateSubscriptionCost,
 } from '@/finance/calculations';
 import { getReserveTargetMinor, getTotalBalanceMinor, getUpcomingObligationsMinor } from '@/finance/aggregates';
-import { DEFAULT_CURRENCY, type CurrencyCode } from '@/constants/currencies';
+import type { CurrencyCode } from '@/constants/currencies';
+import { getActiveCurrency } from '@/features/currency/activeCurrency';
 import { toBillItems } from '@/features/bills/bills';
 import { buildRecommendations } from '@/features/recommendations/recommendations';
 import { buildAlerts } from '@/features/alerts/alerts';
@@ -51,7 +52,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     description: "Returns the user's account balances and total balance for a currency.",
     inputSchema: { type: 'object', properties: { currency: { type: 'string', enum: ['XAF', 'USD', 'EUR', 'GBP'], description: 'Currency code. Defaults to the app default currency.' } }, additionalProperties: false },
     execute: async (input: { currency?: CurrencyCode }) => {
-      const currency = input?.currency ?? DEFAULT_CURRENCY;
+      const currency = input?.currency ?? (await getActiveCurrency());
       const accounts = (await accountsRepository.listAccounts()).filter((a) => a.currency === currency);
       const transactions = await transactionsRepository.listTransactions({});
       const perAccount = accounts.map((account) => ({
@@ -196,7 +197,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     inputSchema: { type: 'object', properties: { month: { type: 'string', description: 'Month as "YYYY-MM". Defaults to the current month.' }, currency: { type: 'string', enum: ['XAF', 'USD', 'EUR', 'GBP'], description: 'Currency code. Defaults to the app default currency.' } }, additionalProperties: false },
     execute: async (input: { month?: string; currency?: CurrencyCode }) => {
       const month = input?.month ?? currentMonthKey();
-      const currency = input?.currency ?? DEFAULT_CURRENCY;
+      const currency = input?.currency ?? (await getActiveCurrency());
       const transactions = await transactionsRepository.listTransactions({ from: `${month}-01`, to: `${month}-31` });
       return { month, currency, ...calculateCashFlow(transactions.filter((tx) => tx.currency === currency), month) };
     },
@@ -214,7 +215,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     description: 'Returns the estimated monthly total of recurring expenses and subscriptions for a currency.',
     inputSchema: { type: 'object', properties: { currency: { type: 'string', enum: ['XAF', 'USD', 'EUR', 'GBP'], description: 'Currency code. Defaults to the app default currency.' } }, additionalProperties: false },
     execute: async (input: { currency?: CurrencyCode }) => {
-      const currency = input?.currency ?? DEFAULT_CURRENCY;
+      const currency = input?.currency ?? (await getActiveCurrency());
       const recurringExpenses = await recurringExpensesRepository.listRecurringExpenses(true);
       return {
         currency,
@@ -228,7 +229,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     description: 'Given a prospective purchase amount, returns the structured facts of its impact on balance, obligations, reserve, and goals. Never a recommendation.',
     inputSchema: { type: 'object', properties: { purchaseAmountMinor: { type: 'integer', minimum: 1, description: 'Purchase price in minor units (XAF: 1 = 1 FCFA; USD: cents).' }, currency: { type: 'string', enum: ['XAF', 'USD', 'EUR', 'GBP'], description: 'Currency code. Defaults to the app default currency.' } }, required: ['purchaseAmountMinor'], additionalProperties: false },
     execute: async (input: { purchaseAmountMinor: number; currency?: CurrencyCode }) => {
-      const currency = input.currency ?? DEFAULT_CURRENCY;
+      const currency = input.currency ?? (await getActiveCurrency());
       const [currentBalanceMinor, upcomingObligationsMinor, reserveTargetMinor, goals] = await Promise.all([
         getTotalBalanceMinor(currency),
         getUpcomingObligationsMinor(currency),
@@ -260,7 +261,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
       'Projects balance forward N months assuming last month\'s net cash flow continues, optionally adjusted by a hypothetical monthly delta ("what if I saved/spent X more per month") — still an ASSUMPTION-tier projection.',
     inputSchema: { type: 'object', properties: { months: { type: 'integer', minimum: 1, maximum: 60, description: 'How many months ahead to project.' }, currency: { type: 'string', enum: ['XAF', 'USD', 'EUR', 'GBP'], description: 'Currency code. Defaults to the app default currency.' }, monthlyAdjustmentMinor: { type: 'integer', description: 'Added to the observed monthly net cash flow: +X models saving more, -X spending more. Minor units.' } }, required: ['months'], additionalProperties: false },
     execute: async (input: { months: number; currency?: CurrencyCode; monthlyAdjustmentMinor?: number }) => {
-      const currency = input.currency ?? DEFAULT_CURRENCY;
+      const currency = input.currency ?? (await getActiveCurrency());
       const [currentBalanceMinor, transactions] = await Promise.all([
         getTotalBalanceMinor(currency),
         transactionsRepository.listTransactions({}),
@@ -315,6 +316,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     description: "Returns the app's current suggestions: purchases the user makes regularly that look due (with typical amounts), bills due within a week, and everyday essentials with the remaining category budget.",
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: async () => {
+      const currency = await getActiveCurrency();
       const month = currentMonthKey();
       const since = new Date(Date.now() - 90 * MS_PER_DAY).toISOString();
       const budget = await budgetsRepository.getBudgetForMonth(month);
@@ -325,7 +327,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
         subscriptionsRepository.listSubscriptions(true),
         recurringExpensesRepository.listRecurringExpenses(true),
       ]);
-      return buildRecommendations({ currency: DEFAULT_CURRENCY, month, categories, transactions, budgetCategories, subscriptions, recurringExpenses }).map(
+      return buildRecommendations({ currency, month, categories, transactions, budgetCategories, subscriptions, recurringExpenses }).map(
         ({ kind, reason, title, detail }) => ({ kind, reason, title, detail }),
       );
     },
@@ -336,6 +338,7 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     description: 'Returns what currently needs attention: negative safe-to-spend, over-budget categories, goals past their deadline, and bills due within 3 days.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: async () => {
+      const currency = await getActiveCurrency();
       const month = currentMonthKey();
       const budget = await budgetsRepository.getBudgetForMonth(month);
       const [categories, transactions, goals, budgetCategories, subscriptions, recurringExpenses, totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor] = await Promise.all([
@@ -345,12 +348,12 @@ export function registerFinancialTools(registry: ToolRegistry): void {
         budget ? budgetsRepository.listBudgetCategories(budget.id) : Promise.resolve([]),
         subscriptionsRepository.listSubscriptions(true),
         recurringExpensesRepository.listRecurringExpenses(true),
-        getTotalBalanceMinor(DEFAULT_CURRENCY),
-        getUpcomingObligationsMinor(DEFAULT_CURRENCY),
-        getReserveTargetMinor(DEFAULT_CURRENCY),
+        getTotalBalanceMinor(currency),
+        getUpcomingObligationsMinor(currency),
+        getReserveTargetMinor(currency),
       ]);
       return buildAlerts({
-        currency: DEFAULT_CURRENCY,
+        currency,
         month,
         categories,
         transactions,
@@ -389,17 +392,18 @@ export function registerFinancialTools(registry: ToolRegistry): void {
     description: "Returns the user's income sources, the next payday, and the daily allowance: safe-to-spend divided by the days until payday.",
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: async () => {
+      const currency = await getActiveCurrency();
       const [sources, totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor] = await Promise.all([
         incomeRepository.listIncomeSources(true),
-        getTotalBalanceMinor(DEFAULT_CURRENCY),
-        getUpcomingObligationsMinor(DEFAULT_CURRENCY),
-        getReserveTargetMinor(DEFAULT_CURRENCY),
+        getTotalBalanceMinor(currency),
+        getUpcomingObligationsMinor(currency),
+        getReserveTargetMinor(currency),
       ]);
       const availableMinor = calculateAvailableMoney({ totalBalanceMinor, upcomingObligationsMinor, reserveTargetMinor });
       const payday = nextPayday(sources);
       const allowance = dailyAllowance(availableMinor, sources);
       return {
-        currency: DEFAULT_CURRENCY,
+        currency,
         incomeSources: sources.map((s) => ({ source: s.source, amountMinor: s.amountMinor, frequency: s.frequency })),
         nextPayday: payday ? { source: payday.source, date: payday.date.toISOString(), inDays: payday.inDays } : null,
         availableToSpendSafelyMinor: availableMinor,

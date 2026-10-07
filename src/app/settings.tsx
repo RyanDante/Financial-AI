@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColorScheme } from 'nativewind';
 import { settingsRepository } from '@/database/repositories';
-import { DEFAULT_CURRENCY } from '@/constants/currencies';
 import { parseMoneyInput } from '@/utils/currency';
 import { AmountText, Body, Button, Caption, Card, IconCircle, Label, SyncStatusBadge } from '@/components/ui';
 import { useFinanceStore } from '@/store/financeStore';
@@ -198,8 +197,6 @@ function AccountSection() {
   );
 }
 
-const RESERVE_KEY = `reserve_target_minor_${DEFAULT_CURRENCY}`;
-
 /**
  * The emergency reserve kept out of "Available to spend safely". Without a
  * value set here, F-AI suggests 3 months of last month's spending
@@ -208,6 +205,9 @@ const RESERVE_KEY = `reserve_target_minor_${DEFAULT_CURRENCY}`;
 function ReserveSection() {
   const colors = useThemeColors();
   const { reserveTargetMinor, loadAll } = useFinanceStore();
+  const currency = useSettingsStore((s) => s.defaultCurrency);
+  // Same key getReserveTargetMinor reads (src/finance/aggregates.ts).
+  const RESERVE_KEY = `reserve_target_minor_${currency}`;
   const [isCustom, setIsCustom] = useState(false);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -220,10 +220,10 @@ function ReserveSection() {
     return () => {
       isCurrent = false;
     };
-  }, [reserveTargetMinor]);
+  }, [reserveTargetMinor, RESERVE_KEY]);
 
   const save = async () => {
-    const minor = parseMoneyInput(input, DEFAULT_CURRENCY);
+    const minor = parseMoneyInput(input, currency);
     if (minor === null || minor < 0) {
       setError('Enter 0 or more.');
       return;
@@ -245,7 +245,7 @@ function ReserveSection() {
     <Card className="gap-sm">
       <Label>Savings reserve</Label>
       <View className="flex-row items-baseline justify-between">
-        <AmountText valueMinor={reserveTargetMinor} currency={DEFAULT_CURRENCY} size="md" />
+        <AmountText valueMinor={reserveTargetMinor} currency={currency} size="md" />
         <Caption>{isCustom ? 'Set by you' : 'Suggested: 3 months of spending'}</Caption>
       </View>
       <Caption>Kept aside from &ldquo;Available to spend safely&rdquo; for emergencies.</Caption>
@@ -254,9 +254,9 @@ function ReserveSection() {
           value={input}
           onChangeText={setInput}
           keyboardType="decimal-pad"
-          placeholder={`New amount (${DEFAULT_CURRENCY})`}
+          placeholder={`New amount (${currency})`}
           placeholderTextColor={colors['text-muted']}
-          accessibilityLabel={`New reserve amount in ${DEFAULT_CURRENCY}`}
+          accessibilityLabel={`New reserve amount in ${currency}`}
           className="flex-1 rounded-md border border-border-strong bg-surface px-md py-sm text-text-primary"
         />
         <Button label="Set" variant="secondary" onPress={save} disabled={!input.trim()} />

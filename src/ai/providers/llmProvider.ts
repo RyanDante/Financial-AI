@@ -1,4 +1,4 @@
-import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import { getActiveCurrency } from '@/features/currency/activeCurrency';
 import { makeAgentRoutingRecord } from '@/types/ai';
 import { createDefaultAgentRegistry, Orchestrator } from '../agents';
 import type { LLMClient } from '../llm/types';
@@ -33,7 +33,7 @@ export class LLMProvider implements AIProvider {
       client: this.client,
       toolSpecs: (allowed) => this.tools.specs(allowed),
     });
-    const response = await orchestrator.handle(text, { currency: DEFAULT_CURRENCY }, params.tools, { history });
+    const response = await orchestrator.handle(text, { currency: await getActiveCurrency() }, params.tools, { history });
 
     const toolCalls = response.agentName ? [makeAgentRoutingRecord(response.agentName), ...response.toolResults] : response.toolResults;
     return { content: response.message, toolCalls };

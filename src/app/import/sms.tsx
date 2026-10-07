@@ -10,7 +10,7 @@ import { calculateBalance } from '@/finance/calculations';
 import { parseMomoSms, referenceNote, splitMessages, type MomoKind, type MomoParseResult } from '@/features/momo/parseMomoSms';
 import { useThemeColors } from '@/constants/theme';
 import { formatMoney } from '@/utils/currency';
-import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import type { CurrencyCode } from '@/constants/currencies';
 import type { NewTransaction, Transaction } from '@/types/finance';
 
 type Direction = 'expense' | 'income';
@@ -28,6 +28,8 @@ interface Draft {
 
 const KIND_LABELS: Record<MomoKind, string> = { received: 'Received', sent: 'Sent', payment: 'Payment', withdrawal: 'Cash out', deposit: 'Cash in' };
 const INCOME_KINDS: MomoKind[] = ['received', 'deposit'];
+/** MTN MoMo and Orange Money messages are always in FCFA, whatever the app currency. */
+const SMS_CURRENCY: CurrencyCode = 'XAF';
 
 /**
  * Turns pasted MTN MoMo / Orange Money SMS into transactions. Every message
@@ -169,7 +171,7 @@ function DraftCard({
             {draft.duplicate ? <Badge label="Already imported" tone="neutral" /> : null}
             {confidence === 'low' ? <Badge label="Check details" tone="warning" /> : null}
           </View>
-          <AmountText valueMinor={fields.amount ?? 0} currency={DEFAULT_CURRENCY} size="md" tone={draft.direction === 'income' ? 'success' : 'primary'} />
+          <AmountText valueMinor={fields.amount ?? 0} currency={SMS_CURRENCY} size="md" tone={draft.direction === 'income' ? 'success' : 'primary'} />
           {fields.counterparty ? <Body numberOfLines={1}>{fields.counterparty}</Body> : null}
           <Caption>
             {fields.occurredAt ? new Date(fields.occurredAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'No date found: today will be used'}
@@ -225,13 +227,13 @@ function DraftCard({
               className="min-h-[44px] flex-row items-center gap-sm"
             >
               <Ionicons name={draft.recordFee ? 'checkbox' : 'square-outline'} size={20} color={draft.recordFee ? colors.accent : colors['text-muted']} />
-              <BodySmall>Also record the {formatMoney(fields.fee ?? 0, DEFAULT_CURRENCY)} fee as an expense</BodySmall>
+              <BodySmall>Also record the {formatMoney(fields.fee ?? 0, SMS_CURRENCY)} fee as an expense</BodySmall>
             </Pressable>
           ) : null}
 
-          {fields.balance !== null && appBalance !== null && account?.currency === DEFAULT_CURRENCY && fields.balance !== appBalance ? (
+          {fields.balance !== null && appBalance !== null && account?.currency === SMS_CURRENCY && fields.balance !== appBalance ? (
             <Caption className="text-warning">
-              The SMS says your balance is {formatMoney(fields.balance, DEFAULT_CURRENCY)}; F-AI shows {formatMoney(appBalance, DEFAULT_CURRENCY)} for {account.name} before this import.
+              The SMS says your balance is {formatMoney(fields.balance, SMS_CURRENCY)}; F-AI shows {formatMoney(appBalance, SMS_CURRENCY)} for {account.name} before this import.
             </Caption>
           ) : null}
         </>
@@ -246,7 +248,7 @@ function toTransactions(draft: Draft, cashAccountId: string | null, feeCategoryI
   if (!draft.accountId || !fields.amount) return [];
   const notes = fields.reference ? referenceNote(fields.reference) : null;
   const occurredAt = fields.occurredAt ?? new Date().toISOString();
-  const base = { accountId: draft.accountId, amountMinor: fields.amount, currency: DEFAULT_CURRENCY, occurredAt, notes, source: 'import' as const, description: null };
+  const base = { accountId: draft.accountId, amountMinor: fields.amount, currency: SMS_CURRENCY, occurredAt, notes, source: 'import' as const, description: null };
 
   const main: NewTransaction =
     fields.kind === 'withdrawal' && cashAccountId

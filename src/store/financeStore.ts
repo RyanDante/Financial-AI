@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { accountsRepository, categoriesRepository, goalsRepository, transactionsRepository } from '@/database/repositories';
 import { calculateBalance, calculateMonthlySpending, calculateSavingsRate } from '@/finance/calculations';
 import { getReserveTargetMinor, getUpcomingObligationsMinor } from '@/finance/aggregates';
-import { DEFAULT_CURRENCY } from '@/constants/currencies';
+import { getActiveCurrency } from '@/features/currency/activeCurrency';
 import { currentMonthKey } from '@/utils/months';
 import type { CreateAccountInput } from '@/database/repositories/accountsRepository';
 import type { Account, Category, Goal, NewTransaction, Transaction } from '@/types/finance';
@@ -45,18 +45,19 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   loadAll: async () => {
     set({ isLoading: true });
+    const currency = await getActiveCurrency();
 
     const [accounts, categories, transactions, goals, upcomingObligationsMinor, reserveTargetMinor] = await Promise.all([
       accountsRepository.listAccounts(),
       categoriesRepository.listCategories(),
       transactionsRepository.listTransactions({ limit: 200 }),
       goalsRepository.listGoals(),
-      getUpcomingObligationsMinor(DEFAULT_CURRENCY),
-      getReserveTargetMinor(DEFAULT_CURRENCY),
+      getUpcomingObligationsMinor(currency),
+      getReserveTargetMinor(currency),
     ]);
 
     const totalBalanceMinor = accounts
-      .filter((a) => a.currency === DEFAULT_CURRENCY)
+      .filter((a) => a.currency === currency)
       .reduce((sum, account) => sum + calculateBalance(account, transactions), 0);
 
     const month = currentMonthKey();
