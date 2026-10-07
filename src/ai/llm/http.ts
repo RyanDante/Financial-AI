@@ -1,17 +1,17 @@
 import { LLMError } from './types';
 
-const TIMEOUT_MS = 20_000;
+const DEFAULT_TIMEOUT_MS = 20_000;
 
 /**
- * POST JSON with a 20 s timeout and one retry on network errors, 429 and
+ * POST JSON with a timeout (20 s by default) and one retry on network errors, 429 and
  * 5xx — the same policy the Anthropic SDK applies — for the vendors called
  * over plain REST.
  */
-export async function postJSON<T>(url: string, headers: Record<string, string>, body: unknown, vendor: string, signal?: AbortSignal): Promise<T> {
+export async function postJSON<T>(url: string, headers: Record<string, string>, body: unknown, vendor: string, signal?: AbortSignal, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
   let lastError: LLMError | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     const onAbort = () => controller.abort();
     signal?.addEventListener('abort', onAbort);
     try {

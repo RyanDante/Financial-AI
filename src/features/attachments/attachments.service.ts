@@ -10,6 +10,9 @@ export interface PickedFile {
   filename: string;
   mimeType: string | null;
   sizeBytes: number | null;
+  /** Pixel size, for photos (used to downscale before AI reading). */
+  width?: number;
+  height?: number;
 }
 
 /** Returns null if the user cancels or denies the permission — the caller just does nothing in that case. */
@@ -26,6 +29,8 @@ export async function pickImageFromLibrary(): Promise<PickedFile | null> {
     filename: asset.fileName ?? `receipt-${Date.now()}.jpg`,
     mimeType: asset.mimeType ?? 'image/jpeg',
     sizeBytes: asset.fileSize ?? null,
+    width: asset.width,
+    height: asset.height,
   };
 }
 
@@ -42,6 +47,8 @@ export async function takePhoto(): Promise<PickedFile | null> {
     filename: asset.fileName ?? `receipt-${Date.now()}.jpg`,
     mimeType: asset.mimeType ?? 'image/jpeg',
     sizeBytes: asset.fileSize ?? null,
+    width: asset.width,
+    height: asset.height,
   };
 }
 

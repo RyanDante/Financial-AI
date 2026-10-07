@@ -12,7 +12,7 @@ interface ChatToolCall {
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
+  content: string | null | ({ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } })[];
   tool_calls?: ChatToolCall[];
   tool_call_id?: string;
 }
@@ -49,19 +49,30 @@ export class OpenAIClient implements LLMClient {
       ...(isOpenAI ? { max_completion_tokens: request.maxTokens ?? 4096 } : { max_tokens: request.maxTokens ?? 4096 }),
     };
 
-    const data = await postJSON<ChatCompletion>(`${this.baseUrl}/chat/completions`, { Authorization: `Bearer ${this.apiKey}` }, body, 'OpenAI', request.signal);
+    const data = await postJSON<ChatCompletion>(`${this.baseUrl}/chat/completions`, { Authorization: `Bearer ${this.apiKey}` }, body, 'OpenAI', request.signal, request.timeoutMs);
     const choice = data.choices?.[0];
     if (!choice) throw new LLMError('OpenAI returned no answer.', true);
 
     const toolCalls = (choice.message.tool_calls ?? []).map((call) => ({ id: call.id, name: call.function.name, input: parseArguments(call.function.arguments) }));
     const stopReason =
       choice.finish_reason === 'content_filter' ? 'refusal' : choice.finish_reason === 'length' ? 'max_tokens' : toolCalls.length > 0 ? 'tool_use' : 'end';
-    return { text: choice.message.content ?? '', toolCalls, stopReason, native: choice.message };
+    return { text: typeof choice.message.content === 'string' ? choice.message.content : '', toolCalls, stopReason, native: choice.message };
   }
 }
 
 function toChatMessages(turn: LLMTurn): ChatMessage[] {
-  if (turn.role === 'user') return [{ role: 'user', content: turn.text }];
+  if (turn.role === 'user') {
+    if (!turn.images?.length) return [{ role: 'user', content: turn.text }];
+    return [
+      {
+        role: 'user',
+        content: [
+          ...turn.images.map((image) => ({ type: 'image_url' as const, image_url: { url: `data:${image.mediaType};base64,${image.base64}` } })),
+          { type: 'text' as const, text: turn.text },
+        ],
+      },
+    ];
+  }
   if (turn.role === 'tool') return turn.results.map((result) => ({ role: 'tool', tool_call_id: result.id, content: result.content }));
   if (turn.native) return [turn.native as ChatMessage];
   return [

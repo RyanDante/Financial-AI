@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { AmountText, Badge, Body, BodySmall, Button, Caption, Card, ChipGroup, Label } from '@/components/ui';
@@ -8,6 +8,10 @@ import { transactionsRepository } from '@/database/repositories';
 import { useFinanceStore } from '@/store/financeStore';
 import { calculateBalance } from '@/finance/calculations';
 import { parseMomoSms, referenceNote, splitMessages, type MomoKind, type MomoParseResult } from '@/features/momo/parseMomoSms';
+import { extractMomoWithAI } from '@/features/momo/aiExtract';
+import { pickImageFromLibrary, type PickedFile } from '@/features/attachments/attachments.service';
+import { prepareImageForAI } from '@/features/images/prepareForAI';
+import { aiClient, providerLabel } from '@/ai';
 import { useThemeColors } from '@/constants/theme';
 import { formatMoney } from '@/utils/currency';
 import type { CurrencyCode } from '@/constants/currencies';
@@ -15,6 +19,8 @@ import type { NewTransaction, Transaction } from '@/types/finance';
 import { FormScrollView } from '@/components/keyboard/keyboard';
 
 type Direction = 'expense' | 'income';
+/** Who read the message: the offline rules, the AI from text, or the AI from a screenshot. */
+type ReadBy = 'rules' | 'ai' | 'image';
 
 interface Draft {
   key: string;
@@ -25,6 +31,7 @@ interface Draft {
   categoryId: string | null;
   recordFee: boolean;
   duplicate: boolean;
+  readBy: ReadBy;
 }
 
 const KIND_LABELS: Record<MomoKind, string> = { received: 'Received', sent: 'Sent', payment: 'Payment', withdrawal: 'Cash out', deposit: 'Cash in' };
@@ -33,19 +40,28 @@ const INCOME_KINDS: MomoKind[] = ['received', 'deposit'];
 const SMS_CURRENCY: CurrencyCode = 'XAF';
 
 /**
- * Turns pasted MTN MoMo / Orange Money SMS into transactions. Every message
+ * Turns MTN MoMo / Orange Money SMS into transactions. Every message
  * becomes a card to check (amount, type, account, category, fee) and
  * nothing is saved until "Save". A message whose reference was already
  * imported is unticked and marked, so pasting the same SMS twice doesn't
  * double-count.
+ *
+ * Messages are read offline by rules first. With an AI provider set up,
+ * "Read with AI" and "Scan a screenshot" let the model read them instead;
+ * amounts it reads from text must appear in the SMS (see aiExtract.ts).
+ * Opened with `text` or `image` params (Share to F-AI), it reads them at once.
  */
 export default function ImportSmsScreen() {
   const colors = useThemeColors();
   const { accounts, categories, loadAll } = useFinanceStore();
-  const [paste, setPaste] = useState('');
+  const params = useLocalSearchParams<{ text?: string; image?: string }>();
+  const [paste, setPaste] = useState(params.text ?? '');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const sharedHandled = useRef(false);
 
   useEffect(() => {
     transactionsRepository.listTransactions({}).then(setAllTransactions);
@@ -56,26 +72,65 @@ export default function ImportSmsScreen() {
   const feeCategoryId = categories.find((c) => c.name === 'Bills')?.id ?? null;
   const importedRefs = useMemo(() => new Set(allTransactions.map((t) => t.notes).filter((n): n is string => !!n)), [allTransactions]);
 
-  const read = () => {
-    const messages = splitMessages(paste);
-    setDrafts(
-      messages.map((message, i) => {
-        const parsed = parseMomoSms(message);
-        const duplicate = !!parsed.fields.reference && importedRefs.has(referenceNote(parsed.fields.reference));
-        return {
-          key: `${i}-${parsed.fields.reference ?? message.length}`,
-          parsed,
-          include: parsed.ok && !duplicate,
-          direction: parsed.fields.kind && INCOME_KINDS.includes(parsed.fields.kind) ? 'income' : 'expense',
-          accountId: momoAccount?.id ?? null,
-          categoryId: null,
-          recordFee: (parsed.fields.fee ?? 0) > 0,
-          duplicate,
-        };
-      }),
-    );
+  const toDraft = (parsed: MomoParseResult, i: number, readBy: ReadBy): Draft => {
+    const duplicate = !!parsed.fields.reference && importedRefs.has(referenceNote(parsed.fields.reference));
+    return {
+      key: `${readBy}-${i}-${parsed.fields.reference ?? parsed.raw.length}`,
+      parsed,
+      include: parsed.ok && !duplicate,
+      direction: parsed.fields.kind && INCOME_KINDS.includes(parsed.fields.kind) ? 'income' : 'expense',
+      accountId: momoAccount?.id ?? null,
+      categoryId: null,
+      recordFee: (parsed.fields.fee ?? 0) > 0,
+      duplicate,
+      readBy,
+    };
+  };
+
+  const readWithRules = (text: string) => {
+    setAiError(null);
+    setDrafts(splitMessages(text).map((message, i) => toDraft(parseMomoSms(message), i, 'rules')));
     Haptics.selectionAsync();
   };
+
+  const readWithAI = async (input: { text?: string; image?: PickedFile }) => {
+    if (!aiClient) return;
+    setAiError(null);
+    setAiBusy(input.image ? 'Reading the screenshot…' : 'Reading your messages…');
+    try {
+      const image = input.image ? await prepareImageForAI(input.image) : undefined;
+      const results = await extractMomoWithAI(aiClient, { text: input.text, image });
+      if (results.length === 0) setAiError('No mobile-money transaction was found.');
+      setDrafts(results.map((result, i) => toDraft(result.parsed, i, result.fromImage ? 'image' : 'ai')));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      if (__DEV__) console.warn('[sms] AI read failed', error);
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      setAiError(`The AI couldn't read this (${reason}). Check your connection, or use "Read messages".`);
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
+  const scanScreenshot = async () => {
+    const file = await pickImageFromLibrary();
+    if (file) await readWithAI({ image: file });
+  };
+
+  // Shared to F-AI (text or a screenshot): read it once the accounts have loaded.
+  useEffect(() => {
+    if (sharedHandled.current || accounts.length === 0 || (!params.text && !params.image)) return;
+    const timer = setTimeout(() => {
+      sharedHandled.current = true;
+      if (params.image && aiClient) readWithAI({ image: { uri: params.image, filename: 'shared.jpg', mimeType: 'image/jpeg', sizeBytes: null } });
+      else if (params.text) {
+        if (aiClient) readWithAI({ text: params.text });
+        else readWithRules(params.text);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, when the accounts are first loaded
+  }, [accounts.length]);
 
   const update = (key: string, patch: Partial<Draft>) => setDrafts((all) => all.map((d) => (d.key === key ? { ...d, ...patch } : d)));
   const selected = drafts.filter((d) => d.include && d.parsed.ok && d.accountId);
@@ -104,8 +159,39 @@ export default function ImportSmsScreen() {
           accessibilityLabel="Pasted SMS messages"
           className="min-h-[120px] rounded-md border border-border-strong bg-surface px-md py-md text-text-primary"
         />
-        <Caption>Messages stay on this phone. Copy them from your SMS app, then paste here.</Caption>
-        <Button label="Read messages" variant="secondary" onPress={read} disabled={!paste.trim()} />
+        <Caption>
+          {aiClient
+            ? `"Read messages" works offline on this phone. "Read with AI" and screenshots are sent to ${providerLabel()} to be read.`
+            : 'Messages stay on this phone. Copy them from your SMS app, then paste here.'}
+        </Caption>
+        <View className="flex-row gap-sm">
+          <View className="flex-1">
+            <Button label="Read messages" variant="secondary" onPress={() => readWithRules(paste)} disabled={!paste.trim() || !!aiBusy} />
+          </View>
+          {aiClient ? (
+            <View className="flex-1">
+              <Button label="Read with AI" variant="secondary" onPress={() => readWithAI({ text: paste })} disabled={!paste.trim() || !!aiBusy} />
+            </View>
+          ) : null}
+        </View>
+        {aiClient ? (
+          <Pressable
+            onPress={scanScreenshot}
+            disabled={!!aiBusy}
+            accessibilityRole="button"
+            className="min-h-[44px] flex-row items-center justify-center gap-sm rounded-md border border-dashed border-border-strong px-md"
+          >
+            <Ionicons name="image-outline" size={18} color={colors['text-primary']} />
+            <BodySmall>Scan a screenshot of your SMS</BodySmall>
+          </Pressable>
+        ) : null}
+        {aiBusy ? (
+          <View className="flex-row items-center gap-sm" accessibilityLiveRegion="polite">
+            <ActivityIndicator size="small" color={colors['accent-secondary']} />
+            <Caption>{aiBusy}</Caption>
+          </View>
+        ) : null}
+        {aiError ? <Caption className="text-danger">{aiError}</Caption> : null}
       </View>
 
       {drafts.map((draft) => (
@@ -158,7 +244,9 @@ function DraftCard({
       <Card className="gap-xs">
         <Badge label="Not recognised" tone="warning" />
         <BodySmall numberOfLines={3}>{draft.parsed.raw}</BodySmall>
-        <Caption>No amount in FCFA was found in this message, so it will be skipped.</Caption>
+        <Caption>
+          {draft.readBy === 'rules' ? 'No amount in FCFA was found in this message, so it will be skipped.' : "The amount couldn't be confirmed in this message, so it will be skipped."}
+        </Caption>
       </Card>
     );
   }
@@ -169,6 +257,8 @@ function DraftCard({
         <View className="flex-1 gap-xs">
           <View className="flex-row flex-wrap gap-xs">
             <Badge label={fields.kind ? KIND_LABELS[fields.kind] : 'Type unclear'} tone={fields.kind ? 'accent' : 'warning'} />
+            {draft.readBy === 'ai' ? <Badge label="Read by AI" tone="neutral" /> : null}
+            {draft.readBy === 'image' ? <Badge label="From screenshot: check the amount" tone="warning" /> : null}
             {draft.duplicate ? <Badge label="Already imported" tone="neutral" /> : null}
             {confidence === 'low' ? <Badge label="Check details" tone="warning" /> : null}
           </View>

@@ -27,6 +27,20 @@ export const aiRouter = new AIRouter({
   cloud: llmClient ? new LLMProvider(llmClient, toolRegistry) : undefined,
 });
 
+/**
+ * The configured model client, or null for the offline copilot. Features
+ * that read pictures or messages (receipts, MoMo SMS) use it directly and
+ * hide themselves when it's null.
+ */
+export const aiClient = llmClient;
+
+const PROVIDER_LABELS = { anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', mock: 'the offline copilot' } as const;
+
+/** "Claude", "OpenAI", "Gemini" or "the offline copilot", for privacy notes. */
+export function providerLabel(): string {
+  return PROVIDER_LABELS[aiStatus.provider];
+}
+
 /** What's answering, for Settings › About and the AI screen. */
 export const aiStatus = {
   provider: llmClient ? aiConfig.provider : ('mock' as const),

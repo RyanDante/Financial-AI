@@ -4,15 +4,13 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Body, Caption, ScreenHeader } from '@/components/ui';
-import { aiStatus } from '@/ai';
+import { aiStatus, providerLabel } from '@/ai';
 import { useAppBarHeight } from '@/components/ui/AppBar';
 import { KeyboardAvoider } from '@/components/keyboard/keyboard';
 import { useThemeColors } from '@/constants/theme';
 import { ChatBubble } from '@/components/ai/ChatBubble';
 import { SuggestedPrompts } from '@/components/ai/SuggestedPrompts';
 import { useAIStore, type ChatMessage } from '@/store/aiStore';
-
-const PROVIDER_LABELS = { anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', mock: 'the offline copilot' } as const;
 
 /** How far above the newest message the user must scroll before "Latest" appears. */
 const SHOW_LATEST_AFTER = 250;
@@ -96,7 +94,7 @@ export default function AIScreen() {
             <Caption className="pb-md">
               {aiStatus.provider === 'mock'
                 ? 'Offline copilot: answers come from built-in rules on this phone.'
-                : `Answers by ${PROVIDER_LABELS[aiStatus.provider]}. Your question and the figures it needs are sent to ${PROVIDER_LABELS[aiStatus.provider]}.`}
+                : `Answers by ${providerLabel()}. Your question and the figures it needs are sent to ${providerLabel()}.`}
             </Caption>
           }
           ListEmptyComponent={

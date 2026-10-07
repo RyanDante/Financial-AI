@@ -56,6 +56,7 @@ export class GeminiClient implements LLMClient {
       body,
       'Gemini',
       request.signal,
+      request.timeoutMs,
     );
 
     if (data.promptFeedback?.blockReason) return { text: '', toolCalls: [], stopReason: 'refusal' };
@@ -77,7 +78,10 @@ export class GeminiClient implements LLMClient {
 }
 
 function toContent(turn: LLMTurn): GeminiContent {
-  if (turn.role === 'user') return { role: 'user', parts: [{ text: turn.text }] };
+  if (turn.role === 'user') {
+    const images = (turn.images ?? []).map((image) => ({ inline_data: { mime_type: image.mediaType, data: image.base64 } }));
+    return { role: 'user', parts: [...images, { text: turn.text }] };
+  }
   if (turn.role === 'tool') {
     return {
       role: 'user',

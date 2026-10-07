@@ -36,8 +36,14 @@ export interface LLMToolResult {
   isError: boolean;
 }
 
+/** A picture sent with a user turn (a receipt, an SMS screenshot), base64 without the data: prefix. */
+export interface LLMImage {
+  base64: string;
+  mediaType: 'image/jpeg' | 'image/png';
+}
+
 export type LLMTurn =
-  | { role: 'user'; text: string }
+  | { role: 'user'; text: string; images?: LLMImage[] }
   /**
    * `native` is the vendor's own assistant payload (e.g. Claude's content
    * blocks, Gemini's parts with thought signatures). The client that made
@@ -62,6 +68,8 @@ export interface LLMRequest {
   tools: LLMToolSpec[];
   maxTokens?: number;
   signal?: AbortSignal;
+  /** Overrides the default 20 s request timeout (reading images takes longer). */
+  timeoutMs?: number;
 }
 
 export interface LLMClient {

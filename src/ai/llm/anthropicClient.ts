@@ -58,7 +58,7 @@ export class AnthropicClient implements LLMClient {
       ...(supportsExtras ? { output_config: { effort: 'medium' }, fallbacks: 'default' } : {}),
     };
 
-    const data = await postJSON<MessagesResponse>(`${this.baseUrl}/v1/messages`, headers, body, 'Claude', request.signal);
+    const data = await postJSON<MessagesResponse>(`${this.baseUrl}/v1/messages`, headers, body, 'Claude', request.signal, request.timeoutMs);
     if (!Array.isArray(data.content)) throw new LLMError('Claude returned no answer.', true);
 
     const toolCalls: LLMToolCall[] = [];
@@ -79,7 +79,16 @@ export class AnthropicClient implements LLMClient {
 }
 
 function toMessage(turn: LLMTurn): { role: 'user' | 'assistant'; content: unknown } {
-  if (turn.role === 'user') return { role: 'user', content: turn.text };
+  if (turn.role === 'user') {
+    if (!turn.images?.length) return { role: 'user', content: turn.text };
+    return {
+      role: 'user',
+      content: [
+        ...turn.images.map((image) => ({ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } })),
+        { type: 'text', text: turn.text },
+      ],
+    };
+  }
   if (turn.role === 'tool') {
     return {
       role: 'user',
